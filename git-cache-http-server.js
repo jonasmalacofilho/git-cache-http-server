@@ -4,19 +4,33 @@ var __child_process = require("child_process");
 var listen = 8080;
 var cacheLocation = "/tmp/var/cache/git/";
 
-var upPat = /^\/(.+)(.git)?\/info\/refs\?service=git-upload-pack$/;
+var pat = /^\/(.+)(.git)?\/(info\/refs\?service=)?git-upload-pack$/;
+
+function err(msg, code, res)
+{
+	console.log("ERROR: " + msg);
+	res.writeHead(code);
+	res.end();
+}
 
 __http.createServer(function (req, res) {
 	console.log(req.method + " " + req.url);
+	var parts = pat.exec(req.url);
 
-	var isUp = upPat.exec(req.url);
-	if (isUp) {
-		var remote = isUp[1];
-		// TODO don't allow arbitrary paths to be constructed with ".."
-		var local = cacheLocation + remote + ".git";
-		console.log("remote: " + remote);
-		console.log("local: " + local);
+	if (!parts)
+		return err("invalid url: " + req.url, 404, res);
+	if (parts[3] != null && req.method != "GET")
+		return err("first request must use GET", 404, res);
+	if (parts[3] == null && req.method != "POST")
+		return err( "second request must use POST", 404, res);
 
+	var remote = parts[1];
+	// TODO don't allow arbitrary paths to be constructed with ".."
+	var local = cacheLocation + remote + ".git";
+	console.log("remote: " + remote);
+	console.log("local: " + local);
+
+	if (parts[3] != null) {
 		// TODO check our cache
 		// TODO fetch or clone
 		
@@ -31,15 +45,28 @@ __http.createServer(function (req, res) {
 			console.log("git-upload-pack: stderr: " + data);
 		});
 		up.on("exit", function (code) {
+			console.log("git-upload-pack: exit code: " + code);
+			if (code != 0) {
+				res.end();
+			}
+		});
+	} else {
+		res.statusCode = 200;
+		res.setHeader("Content-Type", "application/x-git-upload-pack-result");
+		res.setHeader("Cache-Control", "no-cache");
+		var up = __child_process.spawn("git-upload-pack", ["--stateless-rpc", local]);
+		req.pipe(up.stdin);
+		up.stdout.pipe(res);
+		up.stderr.on("data", function (data) {
+			console.log("git-upload-pack: stderr: " + data);
+		});
+		up.on("exit", function (code) {
+			console.log("git-upload-pack: exit code: " + code);
 			if (code != 0) {
 				console.log("git-upload-pack: exit code: " + code);
 				res.end();
 			}
 		});
-	} else {
-		console.log("FUCKK!K!!!");
-		res.writeHead(500);
-		res.end();
 	}
 }).listen(listen);
 
