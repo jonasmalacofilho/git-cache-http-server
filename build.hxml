@@ -1,0 +1,5 @@
+-js bin/git-cache-http-server.js
+-main Main
+-cp src
+-lib hxnodejs
+
