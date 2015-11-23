@@ -143,11 +143,12 @@ Options:
   -c,--cache-dir <path>   Location of the git cache [default: /var/cache/git]
   -p,--port <port>        Bind to port [default: 8080]
   -h,--help               Print this message
+  --version               Print the current version
 ";
 
 	static function main()
 	{
-		var options = js.npm.Docopt.docopt(usage, { argv : Sys.args().slice(2) });
+		var options = js.npm.Docopt.docopt(usage, { version : Version.readPkg() });
 		cacheDir = options["--cache-dir"];
 		listenPort = Std.parseInt(options["--port"]);
 		if (listenPort == null || listenPort < 1 || listenPort > 65535)

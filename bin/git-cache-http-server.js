@@ -167,7 +167,7 @@ Main.handleRequest = function(req,res) {
 	}
 };
 Main.main = function() {
-	var options = js_npm_Docopt.docopt(Main.usage,{ argv : process.argv.slice(2)});
+	var options = js_npm_Docopt.docopt(Main.usage,{ version : "0.0.1-alpha"});
 	Main.cacheDir = options["--cache-dir"];
 	Main.listenPort = Std.parseInt(options["--port"]);
 	if(Main.listenPort == null || Main.listenPort < 1 || Main.listenPort > 65535) throw new js__$Boot_HaxeError("Invalid port number: " + Std.string(options["--port"]));
@@ -215,6 +215,8 @@ StringTools.trim = function(s) {
 StringTools.fastCodeAt = function(s,index) {
 	return s.charCodeAt(index);
 };
+var Version = function() { };
+Version.__name__ = true;
 var haxe_StackItem = { __ename__ : true, __constructs__ : ["CFunction","Module","FilePos","Method","LocalFunction"] };
 haxe_StackItem.CFunction = ["CFunction",0];
 haxe_StackItem.CFunction.toString = $estr;
@@ -551,7 +553,7 @@ String.__name__ = true;
 Array.__name__ = true;
 Main.cacheDir = "/tmp/var/cache/git/";
 Main.listenPort = 8080;
-Main.usage = "\nA caching HTTP git server.\n\nServe local mirror repositories over HTTP/HTTPS, updating them as they are requested.\n\nUsage:\n  git-cache-http-server.js [options]\n\nOptions:\n  -c,--cache-dir <path>   Location of the git cache [default: /var/cache/git]\n  -p,--port <port>        Bind to port [default: 8080]\n  -h,--help               Print this message\n";
+Main.usage = "\nA caching Git HTTP server.\n\nServe local mirror repositories over HTTP/HTTPS, updating them as they are requested.\n\nUsage:\n  git-cache-http-server.js [options]\n\nOptions:\n  -c,--cache-dir <path>   Location of the git cache [default: /var/cache/git]\n  -p,--port <port>        Bind to port [default: 8080]\n  -h,--help               Print this message\n  --version               Print the current version\n";
 haxe_crypto_Base64.CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 haxe_crypto_Base64.BYTES = haxe_io_Bytes.ofString(haxe_crypto_Base64.CHARS);
 Main.main();
