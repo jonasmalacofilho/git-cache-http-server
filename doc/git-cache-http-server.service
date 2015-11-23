@@ -1,0 +1,15 @@
+[Unit]
+Description=Caching git http server
+After=network.target
+
+[Service]
+Type=simple
+PIDFile=/run/git-cache-http-server.pid
+ExecStart=/usr/bin/env git-cache-http-server
+TimeoutStopSec=5
+KillMode=mixed
+
+[Install]
+WantedBy=multi-user.target
+
+

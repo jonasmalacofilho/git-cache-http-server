@@ -129,23 +129,32 @@ class Main {
 		}
 	}
 
-	// settings
-	static var listenPort = 8080;
 	static var cacheDir = "/tmp/var/cache/git/";
+	static var listenPort = 8080;
+	static var usage = "
+A caching Git HTTP server.
+
+Serve local mirror repositories over HTTP/HTTPS, updating them as they are requested.
+
+Usage:
+  git-cache-http-server.js [options]
+
+Options:
+  -c,--cache-dir <path>   Location of the git cache [default: /var/cache/git]
+  -p,--port <port>        Bind to port [default: 8080]
+  -h,--help               Print this message
+";
 
 	static function main()
 	{
-		var usage = "
-		Usage:
-		  git-cache-http-server.js [options]
-
-		Options:
-		  --port <port>, -p <port>        Bind to port [default: 8080]
-		  --cache-dir <path>, -c <path>   Location of the git cache [default: /var/cache/git]
-		";
 		var options = js.npm.Docopt.docopt(usage, { argv : Sys.args().slice(2) });
-		listenPort = Std.parseInt(options["--port"]);
 		cacheDir = options["--cache-dir"];
+		listenPort = Std.parseInt(options["--port"]);
+		if (listenPort == null || listenPort < 1 || listenPort > 65535)
+			throw 'Invalid port number: ${options["--port"]}';
+
+		trace('cache directory: $cacheDir');
+		trace('listening to port: $listenPort');
 		Http.createServer(handleRequest).listen(listenPort);
 	}
 }
