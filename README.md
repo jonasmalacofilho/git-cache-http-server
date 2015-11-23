@@ -1,17 +1,58 @@
 A caching Git HTTP server
 ============================
 
-Serve local mirror repositories over HTTP, automatically updating them as needed.
+Mirror remote repositories and serve them over HTTP, automatically updating
+them as needed.
 
-Features:
+Currently supported client operations are fetch and clone.  Authentication to
+the upstream repository is always enforced (for now, only HTTP Basic is
+supported), but public repositories can be used as well.
 
- - fetch & clone through the "smart" HTTP transfer protocol
- - automatic cloning and syncing of the mirror
- - enforced authentication to upstream before allowing any request
-   - public repositories
-   - Basic HTTP authentication
+# Usage
 
-To install, run: `npm install -g jonasmalacofilho/git-cache-http-server`
+```
+Usage:
+  git-cache-http-server.js [options]
+
+Options:
+  -c,--cache-dir <path>   Location of the git cache [default: /var/cache/git]
+  -p,--port <port>        Bind to port [default: 8080]
+  -h,--help               Print this message
+  --version               Print the current version
+```
+
+The upstream remote is extracted from the URL, taking the first component as
+the remote hostname.
+
+Example:
+
+```
+$ git-cache-http-server --port 1234 --cache-dir /tmp/cache/git &
+$ git clone http://localhost:1234/github.com/jonasmalacofilho/git-cache-http-server
+```
+
+# Installing
+
+Requirements: `nodejs` and `git`.
+
+Install: `npm install -g jonasmalacofilho/git-cache-http-server`
+
+To install as a service, check the `doc/git-cache-http-server.service` example
+service file.
+
+For Systemd init users, this file should not require major tweaks other than
+specifying a different than default port number or cache directory.  After
+installed in the proper Systemd unit path for your distribution, issue:
+
+```
+systemctl daemon-reload
+systemctl start git-cache-http-server
+```
+
+# Implementation
+
+The current implementation is somewhat oversimplified; any help in improving it
+is greatly appreciated!
 
 References:
 
