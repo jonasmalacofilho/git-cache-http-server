@@ -11,6 +11,8 @@ Features:
    - public repositories
    - Basic HTTP authentication
 
+To install, run: `npm install -g jonasmalacofilho/git-cache-http-server`
+
 References:
 
  - [Transfer protocols on the Git Book](http://git-scm.com/book/en/v2/Git-Internals-Transfer-Protocols)
