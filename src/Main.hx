@@ -135,6 +135,17 @@ class Main {
 
 	static function main()
 	{
+		var usage = "
+		Usage:
+		  git-cache-http-server.js [options]
+
+		Options:
+		  --port <port>, -p <port>        Bind to port [default: 8080]
+		  --cache-dir <path>, -c <path>   Location of the git cache [default: /var/cache/git]
+		";
+		var options = js.npm.Docopt.docopt(usage, { argv : Sys.args().slice(2) });
+		listenPort = Std.parseInt(options["--port"]);
+		cacheDir = options["--cache-dir"];
 		Http.createServer(handleRequest).listen(listenPort);
 	}
 }
