@@ -2,4 +2,5 @@
 -main Main
 -cp src
 -lib hxnodejs
+-lib jmf-npm-externs
 
