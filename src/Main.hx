@@ -111,7 +111,11 @@ class Main {
 					res.setHeader("Content-Type", 'application/x-${params.service}-result');
 					res.setHeader("Cache-Control", "no-cache");
 					var up = ChildProcess.spawn(params.service, ["--stateless-rpc", local]);
-					req.pipe(up.stdin);
+                                        // If we receive gzip content, we must unzip
+                                        if (req.headers['content-encoding'] == 'gzip')
+                                                req.pipe(Zlib.createUnzip()).pipe(up.stdin);
+                                        else
+                                                req.pipe(up.stdin);
 					up.stdout.pipe(res);
 					up.stderr.on("data", function (data) trace('${params.service} stderr: $data'));
 					up.on("exit", function (code) {

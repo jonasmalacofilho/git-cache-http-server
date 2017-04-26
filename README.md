@@ -27,15 +27,20 @@ the remote hostname.
 Example:
 
 ```
-$ git-cache-http-server --port 1234 --cache-dir /tmp/cache/git &
-$ git clone http://localhost:1234/github.com/jonasmalacofilho/git-cache-http-server
+git-cache-http-server --port 1234 --cache-dir /tmp/cache/git &
+git clone http://localhost:1234/github.com/jonasmalacofilho/git-cache-http-server
+```
+
+If you run your git-cache on a dedicated server or container (i.e. named gitcache), you can then also configure git to always use your cache like in the following example (don't use this configuration on the git-cache machine itself):.
+```
+git config --global url."http://gitcache:1234/".insteadOf https:// && \
 ```
 
 # Installing
 
 Requirements: `nodejs` and `git`.
 
-Install: `npm install -g jonasmalacofilho/git-cache-http-server`
+Install: `npm install -g git-cache-http-server`
 
 To install as a service, check the `doc/git-cache-http-server.service` example
 service file.
@@ -47,6 +52,20 @@ installed in the proper Systemd unit path for your distribution, issue:
 ```
 systemctl daemon-reload
 systemctl start git-cache-http-server
+```
+
+# Building from source
+
+This is needed only if you change the Haxe source code in `src/`.
+
+Requirements: `haxe` and `haxelib`.
+
+You'll need the "hxnodejs" and the https://github.com/jonasmalacofilho/jmf-npm-externs.hx libraries before being able to compile the project.
+
+```
+haxelib install hxnodejs
+haxelib git https://github.com/jonasmalacofilho/jmf-npm-externs.hx.git
+haxe build.hxml
 ```
 
 # Implementation
