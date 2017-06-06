@@ -1,6 +1,6 @@
 {
   "name": "git-cache-http-server",
-  "version": "0.0.1-alpha",
+  "version": "0.0.2",
   "description": "A caching Git HTTP server",
   "bin": {
     "git-cache-http-server": "bin/git-cache-http-server"
