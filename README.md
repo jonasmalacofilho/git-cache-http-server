@@ -58,13 +58,10 @@ systemctl start git-cache-http-server
 
 This is needed only if you change the Haxe source code in `src/`.
 
-Requirements: `haxe` and `haxelib`.
-
-You'll need the "hxnodejs" and the https://github.com/jonasmalacofilho/jmf-npm-externs.hx libraries before being able to compile the project.
+Requirements: `haxe` and [`hmm`](https://github.com/andywhite37/hmm).  If you prefer to manage the build dependencies manually, check out [`hmm.json`](hmm.json) for the required libraries.
 
 ```
-haxelib install hxnodejs
-haxelib git https://github.com/jonasmalacofilho/jmf-npm-externs.hx.git
+hmm install
 haxe build.hxml
 ```
 

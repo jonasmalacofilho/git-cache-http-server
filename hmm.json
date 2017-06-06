@@ -1,0 +1,16 @@
+{
+  "dependencies": [
+    {
+      "name": "hxnodejs",
+      "type": "haxelib",
+      "version": null
+    },
+    {
+      "name": "jmf-npm-externs",
+      "type": "git",
+      "dir": null,
+      "ref": "master",
+      "url": "https://github.com/jonasmalacofilho/jmf-npm-externs.hx"
+    }
+  ]
+}
