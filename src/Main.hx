@@ -96,7 +96,11 @@ class Main {
 				if (params.isInfoRequest) {
 					update(remote, local, function (err) {
 						if (err != null) {
-							throw err;
+							trace('ERROR: $err');
+							trace(haxe.CallStack.toString(haxe.CallStack.exceptionStack()));
+							res.statusCode = 500;
+							res.end();
+							return;
 						}
 						res.statusCode = 200;
 						res.setHeader("Content-Type", 'application/x-${params.service}-advertisement');
