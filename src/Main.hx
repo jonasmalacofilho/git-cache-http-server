@@ -50,14 +50,16 @@ class Main {
 			if (ferr != null) {
 				trace("updating: fetch failed, cloning");
 				clone(remote, local, function (cerr, stdout, stderr) {
-					if (cerr != null)
-						throw 'git clone exited with non-zero status: ${cerr.code}';
-					trace("updating: success");
-					callback();
+					if (cerr != null) {
+						callback('git clone exited with non-zero status: ${cerr.code}');
+					} else {
+						trace("updating: success");
+						callback(null);
+					}
 				});
 			} else {
 				trace("updating: success");
-				callback();
+				callback(null);
 			}
 		});
 	}
@@ -92,7 +94,10 @@ class Main {
 				}
 
 				if (params.isInfoRequest) {
-					update(remote, local, function () {
+					update(remote, local, function (err) {
+						if (err != null) {
+							throw err;
+						}
 						res.statusCode = 200;
 						res.setHeader("Content-Type", 'application/x-${params.service}-advertisement');
 						res.setHeader("Cache-Control", "no-cache");
