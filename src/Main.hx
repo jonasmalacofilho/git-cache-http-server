@@ -1,5 +1,6 @@
 import js.node.*;
 import js.node.http.*;
+import js.Promise;
 
 class Main {
 	static function parseAuth(s:String)
@@ -45,20 +46,43 @@ class Main {
 
 	static function update(remote, local, callback)
 	{
-		trace("updating: fetching");
-		fetch(local, function (ferr, stdout, stderr) {
-			if (ferr != null) {
-				trace("updating: fetch failed, cloning");
-				clone(remote, local, function (cerr, stdout, stderr) {
-					if (cerr != null)
-						throw 'git clone exited with non-zero status: ${cerr.code}';
-					trace("updating: success");
-					callback();
+		if (!updatePromises.exists(local)) {
+			updatePromises[local] = new Promise(function(resolve, reject) {
+				trace("updating: fetching");
+				fetch(local, function (ferr, stdout, stderr) {
+					if (ferr != null) {
+						trace("updating: fetch failed, cloning");
+						clone(remote, local, function (cerr, stdout, stderr) {
+							if (cerr != null) {
+								resolve('git clone exited with non-zero status: ${cerr.code}');
+							} else {
+								trace("updating: success");
+								resolve(null);
+							}
+						});
+					} else {
+						trace("updating: success");
+						resolve(null);
+					}
 				});
-			} else {
-				trace("updating: success");
-				callback();
-			}
+			})
+			.then(function(success) {
+				updatePromises.remove(local);
+				return Promise.resolve(success);
+			})
+			.catchError(function(err) {
+				updatePromises.remove(local);
+				return Promise.reject(err);
+			});
+		} else {
+			trace("reusing existing promise");
+		}
+		return updatePromises[local]
+		.then(function(nothing:Dynamic) {
+			trace("promise fulfilled");
+			callback(null);
+		}, function(err:Dynamic) {
+			callback(err);
 		});
 	}
 
@@ -92,7 +116,14 @@ class Main {
 				}
 
 				if (params.isInfoRequest) {
-					update(remote, local, function () {
+					update(remote, local, function (err) {
+						if (err != null) {
+							trace('ERROR: $err');
+							trace(haxe.CallStack.toString(haxe.CallStack.exceptionStack()));
+							res.statusCode = 500;
+							res.end();
+							return;
+						}
 						res.statusCode = 200;
 						res.setHeader("Content-Type", 'application/x-${params.service}-advertisement');
 						res.setHeader("Cache-Control", "no-cache");
@@ -133,6 +164,7 @@ class Main {
 		}
 	}
 
+	static var updatePromises = new Map<String, Promise<Dynamic>>();
 	static var cacheDir = "/tmp/var/cache/git/";
 	static var listenPort = 8080;
 	static var usage = "
