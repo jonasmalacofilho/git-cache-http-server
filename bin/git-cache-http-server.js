@@ -69,8 +69,10 @@ Main.getParams = function(req) {
 Main.clone = function(remote,local,callback) {
 	js_node_ChildProcess.exec("git clone --quiet --mirror \"" + remote + "\" \"" + local + "\"",callback);
 };
-Main.fetch = function(local,callback) {
-	js_node_ChildProcess.exec("git -C \"" + local + "\" fetch --quiet",callback);
+Main.fetch = function(remote,local,callback) {
+	js_node_ChildProcess.exec("git -C \"" + local + "\" remote set-url origin \"" + remote + "\"",function(err,stdout,stderr) {
+		js_node_ChildProcess.exec("git -C \"" + local + "\" fetch --quiet",callback);
+	});
 };
 Main.authenticate = function(params,callback) {
 	console.log("INFO: authenticating on the upstream repo " + params.repo);
@@ -86,8 +88,8 @@ Main.update = function(remote,local,callback) {
 	if(!(__map_reserved[local] != null ? _this.existsReserved(local) : _this.h.hasOwnProperty(local))) {
 		var this1 = Main.updatePromises;
 		var v = new Promise(function(resolve,reject) {
-			Main.fetch(local,function(ferr,stdout,stderr) {
-				console.log("INFO: updating: fetching from " + remote);
+			console.log("INFO: updating: fetching from " + remote);
+			Main.fetch(remote,local,function(ferr,stdout,stderr) {
 				if(ferr != null) {
 					console.log("WARN: updating: fetch failed");
 					console.log(stdout);

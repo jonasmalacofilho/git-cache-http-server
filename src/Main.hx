@@ -29,9 +29,11 @@ class Main {
 		ChildProcess.exec('git clone --quiet --mirror "$remote" "$local"', callback);
 	}
 
-	static function fetch(local, callback)
+	static function fetch(remote, local, callback)
 	{
-		ChildProcess.exec('git -C "$local" fetch --quiet', callback);
+		ChildProcess.exec('git -C "$local" remote set-url origin "$remote"', function(err, stdout, stderr) {
+			ChildProcess.exec('git -C "$local" fetch --quiet', callback);
+		});
 	}
 
 	static function authenticate(params, callback)
@@ -48,8 +50,8 @@ class Main {
 	{
 		if (!updatePromises.exists(local)) {
 			updatePromises[local] = new Promise(function(resolve, reject) {
-				fetch(local, function (ferr, stdout, stderr) {
 				trace('INFO: updating: fetching from $remote');
+				fetch(remote, local, function (ferr, stdout, stderr) {
 					if (ferr != null) {
 						trace("WARN: updating: fetch failed");
 						trace(stdout);
