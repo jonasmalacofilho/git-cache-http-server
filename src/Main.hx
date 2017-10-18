@@ -7,7 +7,7 @@ class Main {
 	{
 		var parts = s.split(" ");
 		if (parts[0] != "Basic")
-			throw "HTTP authentication schemes other than Basic not supported";
+			throw "ERR: HTTP authentication schemes other than Basic not supported";
 		return haxe.crypto.Base64.decode(parts[1]);
 	}
 
@@ -36,7 +36,7 @@ class Main {
 
 	static function authenticate(params, callback)
 	{
-		trace("authenticating on the upstream repo");
+		trace('INFO: authenticating on the upstream repo ${params.repo}');
 		var req = Https.request('https://${params.repo}/info/refs?service=${params.service}', callback);
 		req.setHeader("User-Agent", "git/");
 		if (params.auth != null)
@@ -48,20 +48,25 @@ class Main {
 	{
 		if (!updatePromises.exists(local)) {
 			updatePromises[local] = new Promise(function(resolve, reject) {
-				trace("updating: fetching");
 				fetch(local, function (ferr, stdout, stderr) {
+				trace('INFO: updating: fetching from $remote');
 					if (ferr != null) {
-						trace("updating: fetch failed, cloning");
+						trace("WARN: updating: fetch failed");
+						trace(stdout);
+						trace(stderr);
+						trace("WARN: continuing with clone");
 						clone(remote, local, function (cerr, stdout, stderr) {
 							if (cerr != null) {
-								resolve('git clone exited with non-zero status: ${cerr.code}');
+								trace(stdout);
+								trace(stderr);
+								resolve('ERR: git clone exited with non-zero status: ${cerr.code}');
 							} else {
-								trace("updating: success");
+								trace("INFO: updating via clone: success");
 								resolve(null);
 							}
 						});
 					} else {
-						trace("updating: success");
+						trace("INFO: updating via fetch: success");
 						resolve(null);
 					}
 				});
@@ -75,11 +80,11 @@ class Main {
 				return Promise.reject(err);
 			});
 		} else {
-			trace("reusing existing promise");
+			trace("INFO: reusing existing promise");
 		}
 		return updatePromises[local]
 		.then(function(nothing:Dynamic) {
-			trace("promise fulfilled");
+			trace("INFO: promise fulfilled");
 			callback(null);
 		}, function(err:Dynamic) {
 			callback(err);
@@ -118,7 +123,7 @@ class Main {
 				if (params.isInfoRequest) {
 					update(remote, local, function (err) {
 						if (err != null) {
-							trace('ERROR: $err');
+							trace('ERR: $err');
 							trace(haxe.CallStack.toString(haxe.CallStack.exceptionStack()));
 							res.statusCode = 500;
 							res.end();
@@ -134,7 +139,7 @@ class Main {
 						up.on("exit", function (code) {
 							if (code != 0)
 								res.end();
-							trace('${params.service} done with exit $code');
+							trace('INFO: ${params.service} done with exit $code');
 						});
 					});
 				} else {
@@ -190,8 +195,8 @@ Options:
 		if (listenPort == null || listenPort < 1 || listenPort > 65535)
 			throw 'Invalid port number: ${options["--port"]}';
 
-		trace('cache directory: $cacheDir');
-		trace('listening to port: $listenPort');
+		trace('INFO: cache directory: $cacheDir');
+		trace('INFO: listening to port: $listenPort');
 		Http.createServer(handleRequest).listen(listenPort);
 	}
 }
