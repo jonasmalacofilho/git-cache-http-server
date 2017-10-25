@@ -3,12 +3,29 @@ import js.node.http.*;
 import js.Promise;
 
 class Main {
+	static function safeUser(basic:String)
+	{
+		var basic = basic.split(":");
+		if (basic.length != 2)
+			throw "ERR: invalid Basic HTTP authentication";
+		var user = basic[0];
+		var pwd = basic[1];
+		if ((user == pwd || pwd == "" || ~/oauth/.match(pwd)) && user.length > 5)
+			user = user.substr(0, 5) + "...";
+		return user;
+	}
+
 	static function parseAuth(s:String)
 	{
+		if (s == null)
+			return null;
 		var parts = s.split(" ");
 		if (parts[0] != "Basic")
 			throw "ERR: HTTP authentication schemes other than Basic not supported";
-		return haxe.crypto.Base64.decode(parts[1]);
+		return {
+			authorization : s,
+			basic : haxe.crypto.Base64.decode(parts[1]).toString()
+		}
 	}
 
 	static function getParams(req:IncomingMessage)
@@ -18,7 +35,7 @@ class Main {
 			throw 'Cannot deal with url';
 		return {
 			repo : r.matched(1),
-			auth : req.headers["authorization"],
+			auth : parseAuth(req.headers["authorization"]),
 			service : r.matched(4),
 			isInfoRequest : r.matched(3) != null
 		}
@@ -36,21 +53,21 @@ class Main {
 		});
 	}
 
-	static function authenticate(params, callback)
+	static function authenticate(params, infos, callback)
 	{
-		trace('INFO: authenticating on the upstream repo ${params.repo}');
+		trace('INFO: authenticating on the upstream repo ${infos.repo} (user ${infos.user})');
 		var req = Https.request('https://${params.repo}/info/refs?service=${params.service}', callback);
 		req.setHeader("User-Agent", "git/");
 		if (params.auth != null)
-			req.setHeader("Authorization", params.auth);
+			req.setHeader("Authorization", params.auth.authorization);
 		req.end();
 	}
 
-	static function update(remote, local, callback)
+	static function update(remote, local, infos:{ repo:String, user:String }, callback)
 	{
 		if (!updatePromises.exists(local)) {
 			updatePromises[local] = new Promise(function(resolve, reject) {
-				trace('INFO: updating: fetching from $remote');
+				trace('INFO: updating: fetching from ${infos.repo} (user ${infos.user})');
 				fetch(remote, local, function (ferr, stdout, stderr) {
 					if (ferr != null) {
 						trace("WARN: updating: fetch failed");
@@ -98,6 +115,10 @@ class Main {
 		try {
 			trace('${req.method} ${req.url}');
 			var params = getParams(req);
+			var infos = {
+				repo : params.repo,
+				user : safeUser(params.auth.basic)
+			}
 
 			switch ([req.method == "GET", params.isInfoRequest]) {
 			case [false, false], [true, true]:  // ok
@@ -110,10 +131,10 @@ class Main {
 			var remote = if (params.auth == null)
 				'https://${params.repo}';
 			else
-				'https://${parseAuth(params.auth)}@${params.repo}';
+				'https://${params.auth.basic}@${params.repo}';
 			var local = Path.join(cacheDir, params.repo);
 
-			authenticate(params, function (upRes) {
+			authenticate(params, infos, function (upRes) {
 				switch (upRes.statusCode) {
 				case 401, 403, 404:
 					res.writeHead(upRes.statusCode, upRes.headers);
@@ -123,7 +144,7 @@ class Main {
 				}
 
 				if (params.isInfoRequest) {
-					update(remote, local, function (err) {
+					update(remote, local, infos, function (err) {
 						if (err != null) {
 							trace('ERR: $err');
 							trace(haxe.CallStack.toString(haxe.CallStack.exceptionStack()));
