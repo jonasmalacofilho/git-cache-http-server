@@ -55,7 +55,7 @@ class Main {
 
 	static function authenticate(params, infos, callback)
 	{
-		trace('INFO: authenticating on the upstream repo ${infos.repo} (user ${infos.user})');
+		trace('INFO: authenticating on the upstream repo $infos');
 		var req = Https.request('https://${params.repo}/info/refs?service=${params.service}', callback);
 		req.setHeader("User-Agent", "git/");
 		if (params.auth != null)
@@ -63,11 +63,11 @@ class Main {
 		req.end();
 	}
 
-	static function update(remote, local, infos:{ repo:String, user:String }, callback)
+	static function update(remote, local, infos, callback)
 	{
 		if (!updatePromises.exists(local)) {
 			updatePromises[local] = new Promise(function(resolve, reject) {
-				trace('INFO: updating: fetching from ${infos.repo} (user ${infos.user})');
+				trace('INFO: updating: fetching from $infos');
 				fetch(remote, local, function (ferr, stdout, stderr) {
 					if (ferr != null) {
 						trace("WARN: updating: fetch failed");
@@ -115,10 +115,9 @@ class Main {
 		try {
 			trace('${req.method} ${req.url}');
 			var params = getParams(req);
-			var infos = {
-				repo : params.repo,
-				user : safeUser(params.auth.basic)
-			}
+			var infos = '${params.repo}';
+			if (params.auth != null)
+				infos += ' (user ${safeUser(params.auth.basic)})';
 
 			switch ([req.method == "GET", params.isInfoRequest]) {
 			case [false, false], [true, true]:  // ok
