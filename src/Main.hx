@@ -219,7 +219,8 @@ Options:
 
 		trace('INFO: cache directory: $cacheDir');
 		trace('INFO: listening to port: $listenPort');
-		Http.createServer(handleRequest).listen(listenPort);
+		var server = Http.createServer(handleRequest);
+		server.setTimeout(120*60*1000); // 120 * 60 seconds * 1000 msecs
+		server.listen(listenPort);
 	}
 }
-
