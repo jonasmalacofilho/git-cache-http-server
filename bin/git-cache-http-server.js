@@ -256,7 +256,9 @@ Main.main = function() {
 	}
 	console.log("Main.hx:220:","INFO: cache directory: " + Main.cacheDir);
 	console.log("Main.hx:221:","INFO: listening to port: " + Main.listenPort);
-	js_node_Http.createServer(Main.handleRequest).listen(Main.listenPort);
+	var server = js_node_Http.createServer(Main.handleRequest);
+	server.setTimeout(7200000);
+	server.listen(Main.listenPort);
 };
 Math.__name__ = true;
 var Std = function() { };
