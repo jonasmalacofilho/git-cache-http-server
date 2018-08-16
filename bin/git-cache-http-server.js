@@ -92,12 +92,17 @@ Main.fetch = function(remote,local,callback) {
 };
 Main.authenticate = function(params,infos,callback) {
 	console.log("INFO: authenticating on the upstream repo " + infos);
-	var opts = { };
-	opts.protocol = "https:";
-	opts.host = params.repo;
-	opts.path = "/info/refs?service=" + params.service;
-	opts.agent = Main.proxyAgent;
-	var req = js_node_Https.request(opts,callback);
+	var req;
+	if(Main.proxyAgent == null) {
+		req = js_node_Https.request("https://" + params.repo + "/info/refs?service=" + params.service,callback);
+	} else {
+		var opts = { };
+		opts.protocol = "https:";
+		opts.host = params.repo;
+		opts.path = "/info/refs?service=" + params.service;
+		opts.agent = Main.proxyAgent;
+		req = js_node_Https.request(opts,callback);
+	}
 	req.setHeader("User-Agent","git/");
 	if(params.auth != null) {
 		req.setHeader("Authorization",params.auth.authorization);

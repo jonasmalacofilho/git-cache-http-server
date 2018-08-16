@@ -56,12 +56,19 @@ class Main {
 	static function authenticate(params, infos, callback)
 	{
 		trace('INFO: authenticating on the upstream repo $infos');
-		var opts:Https.HttpsRequestOptions = {};
-		opts.protocol = "https:";
-		opts.host = params.repo;
-		opts.path = '/info/refs?service=${params.service}';
-		opts.agent = proxyAgent;
-		var req = Https.request(opts, callback);
+		var req:ClientRequest;
+		if (proxyAgent == null) {
+			req = Https.request('https://${params.repo}/info/refs?service=${params.service}', callback);
+		}
+		else {
+			var opts:Https.HttpsRequestOptions = {};
+			opts.protocol = "https:";
+			opts.host = params.repo;
+			opts.path = '/info/refs?service=${params.service}';
+			opts.agent = proxyAgent;
+			req = Https.request(opts, callback);
+		}
+
 		req.setHeader("User-Agent", "git/");
 		if (params.auth != null)
 			req.setHeader("Authorization", params.auth.authorization);
