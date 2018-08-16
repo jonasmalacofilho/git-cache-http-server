@@ -56,7 +56,19 @@ class Main {
 	static function authenticate(params, infos, callback)
 	{
 		trace('INFO: authenticating on the upstream repo $infos');
-		var req = Https.request('https://${params.repo}/info/refs?service=${params.service}', callback);
+		var req:ClientRequest;
+		if (proxyAgent == null) {
+			req = Https.request('https://${params.repo}/info/refs?service=${params.service}', callback);
+		}
+		else {
+			var opts:Https.HttpsRequestOptions = {};
+			opts.protocol = "https:";
+			opts.host = params.repo;
+			opts.path = '/info/refs?service=${params.service}';
+			opts.agent = proxyAgent;
+			req = Https.request(opts, callback);
+		}
+
 		req.setHeader("User-Agent", "git/");
 		if (params.auth != null)
 			req.setHeader("Authorization", params.auth.authorization);
@@ -194,6 +206,7 @@ class Main {
 	static var updatePromises = new Map<String, Promise<Dynamic>>();
 	static var cacheDir = "/tmp/var/cache/git/";
 	static var listenPort = 8080;
+	static var proxyAgent = null;
 	static var usage = "
 A caching Git HTTP server.
 
@@ -219,6 +232,14 @@ Options:
 
 		trace('INFO: cache directory: $cacheDir');
 		trace('INFO: listening to port: $listenPort');
+
+		var env = Sys.environment();
+		var proxyUrl = env["http_proxy"];
+		if (proxyUrl == null)
+			proxyUrl = env["HTTP_PROXY"];
+		if (proxyUrl != null)
+			proxyAgent = new HttpsProxyAgent(proxyUrl);
+
 		var server = Http.createServer(handleRequest);
 		server.setTimeout(120*60*1000); // 120 * 60 seconds * 1000 msecs
 		server.listen(listenPort);
