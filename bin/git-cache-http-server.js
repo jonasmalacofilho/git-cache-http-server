@@ -86,8 +86,8 @@ Main.clone = function(remote,local,callback) {
 	js_node_ChildProcess.exec("git clone --quiet --mirror \"" + remote + "\" \"" + local + "\"",callback);
 };
 Main.fetch = function(remote,local,callback) {
-	js_node_ChildProcess.exec("git -C \"" + local + "\" remote set-url origin \"" + remote + "\"",function(err,stdout,stderr) {
-		js_node_ChildProcess.exec("git -C \"" + local + "\" fetch --quiet",callback);
+	js_node_ChildProcess.exec("git --git-dir \"" + local + "\" remote set-url origin \"" + remote + "\"",function(err,stdout,stderr) {
+		js_node_ChildProcess.exec("git --git-dir \"" + local + "\" fetch --quiet",callback);
 	});
 };
 Main.authenticate = function(params,infos,callback) {
