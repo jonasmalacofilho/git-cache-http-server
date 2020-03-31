@@ -58,7 +58,7 @@ systemctl start git-cache-http-server
 
 This is needed only if you change the Haxe source code in `src/`.
 
-Requirements: [`haxe`](https://haxe.org).  If you prefer to manage the build dependencies manually, check out [`build.hxml`](build.hxml) for the required libraries.
+Requirements: [Haxe](https://haxe.org) (`haxe` and `haxelib`).  If you prefer to manage the build dependencies manually, check out [`build.hxml`](build.hxml) for the required libraries.
 
 ```
 haxelib newrepo
