@@ -2,5 +2,4 @@
 -main Main
 -cp src
 -lib hxnodejs
--lib jmf-npm-externs
-
+-lib jmf-npm-externs:git:https://github.com/jonasmalacofilho/jmf-npm-externs.hx#master

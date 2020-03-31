@@ -58,10 +58,11 @@ systemctl start git-cache-http-server
 
 This is needed only if you change the Haxe source code in `src/`.
 
-Requirements: `haxe` and [`hmm`](https://github.com/andywhite37/hmm).  If you prefer to manage the build dependencies manually, check out [`hmm.json`](hmm.json) for the required libraries.
+Requirements: [`haxe`](https://haxe.org).  If you prefer to manage the build dependencies manually, check out [`build.hxml`](build.hxml) for the required libraries.
 
 ```
-hmm install
+haxelib newrepo
+haxelib install build.hxml
 haxe build.hxml
 ```
 
@@ -76,4 +77,3 @@ References:
  - [Git documentation on the HTTP transfer protocols](https://github.com/git/git/blob/master/Documentation/technical/http-protocol.txt)
  - [Source code for the GitLab workhorse](https://gitlab.com/gitlab-org/gitlab-workhorse/blob/master/handlers.go)
  - [Source code for `git-http-backend`](https://github.com/git/git/blob/master/http-backend.c)
-
