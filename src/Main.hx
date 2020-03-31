@@ -1,6 +1,11 @@
 import js.node.*;
 import js.node.http.*;
+
+#if (haxe >= version("4.0.0"))
+import js.lib.Promise;
+#else
 import js.Promise;
+#end
 
 class Main {
 	static function safeUser(basic:String)
@@ -53,7 +58,7 @@ class Main {
 		});
 	}
 
-	static function authenticate(params, infos, callback)
+	static function authenticate(params, infos, callback:IncomingMessage->Void)
 	{
 		trace('INFO: authenticating on the upstream repo $infos');
 		var req:ClientRequest;
