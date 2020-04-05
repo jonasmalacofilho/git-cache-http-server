@@ -31,7 +31,11 @@ git-cache-http-server --port 1234 --cache-dir /tmp/cache/git &
 git clone http://localhost:1234/github.com/jonasmalacofilho/git-cache-http-server
 ```
 
-If you run your git-cache on a dedicated server or container (i.e. named gitcache), you can then also configure git to always use your cache like in the following example (don't use this configuration on the git-cache machine itself):.
+If you run your git-cache on a dedicated server or container (i.e. named
+gitcache), you can then also configure git to always use your cache like in the
+following example (don't use this configuration on the git-cache machine
+itself):.
+
 ```
 git config --global url."http://gitcache:1234/".insteadOf https://
 ```
@@ -40,7 +44,7 @@ git config --global url."http://gitcache:1234/".insteadOf https://
 
 Requirements: `nodejs` and `git`.
 
-Install: `npm install -g git-cache-http-server`
+Install: `npm install --global git-cache-http-server`.
 
 To install as a service, check the `doc/git-cache-http-server.service` example
 service file.
@@ -54,17 +58,22 @@ systemctl daemon-reload
 systemctl start git-cache-http-server
 ```
 
-# Building from source
+# Working on the sources
 
-This is needed only if you change the Haxe source code in `src/`.
+This is only needed if you want to change the Haxe source code in `src/`.
 
-Requirements: [Haxe](https://haxe.org) (`haxe` and `haxelib`).  If you prefer to manage the build dependencies manually, check out [`build.hxml`](build.hxml) for the required libraries.
+Requirements: [Haxe](https://haxe.org) (`haxe` and `haxelib`).  If you prefer
+to manage the build dependencies manually, check out [`build.hxml`](build.hxml)
+for the required libraries.
 
 ```
 haxelib newrepo
 haxelib install build.hxml
 haxe build.hxml
 ```
+
+And in order to use the locally modified version: `npm link` (this changes the
+global NPM space).
 
 # Implementation
 

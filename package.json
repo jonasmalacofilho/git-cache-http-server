@@ -3,9 +3,9 @@
   "version": "0.0.2",
   "description": "A caching Git HTTP server",
   "bin": {
-    "git-cache-http-server": "bin/git-cache-http-server"
+    "git-cache-http-server": "./bin/git-cache-http-server.js"
   },
-  "main": "bin/git-cache-http-server.js",
+  "main": "./bin/git-cache-http-server.js",
   "directories": {
     "doc": "doc",
     "src": "src"
