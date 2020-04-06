@@ -12,7 +12,8 @@
   },
   "dependencies": {
     "docopt": "^0.6.2",
-    "http-proxy-agent": "^2.1.0"
+    "event-debug": "^2.1.0",
+    "http-proxy-agent": "^4.0.1"
   },
   "repository": {
     "type": "git",
