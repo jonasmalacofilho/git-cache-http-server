@@ -44,18 +44,21 @@ git config --global url."http://gitcache:1234/".insteadOf https://
 
 Requirements: `nodejs` and `git`.
 
-Install: `npm install --global git-cache-http-server`.
+```
+npm install --global git-cache-http-server
+```
 
-To install as a service, check the `doc/git-cache-http-server.service` example
-service file.
+To install a cache service on Linux systems, check the example
+`doc/git-cache-http-server.service` unit file.
 
-For Systemd init users, this file should not require major tweaks other than
+For Systemd init users that file should not require major tweaks, other than
 specifying a different than default port number or cache directory.  After
-installed in the proper Systemd unit path for your distribution, issue:
+installed in the proper Systemd unit path for your distribution:
 
 ```
 systemctl daemon-reload
 systemctl start git-cache-http-server
+systemctl enable git-cache-http-server
 ```
 
 # Working with the Haxe sources
@@ -69,10 +72,13 @@ transparently with the usual npm commands.  The resulting JS script will be
 placed in `bin/`.
 
 ```
-# install development dependencies and build
+# clone the repository (adjust the protocol)
+git clone https://github.com/jonasmalacofilho/git-cache-http-server
+
+# install development dependencies and build the sources
 npm install
 
-# install the built package globally
+# install the built code globally (might require sudo)
 npm install --global
 ```
 
