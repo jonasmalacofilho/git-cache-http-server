@@ -23,5 +23,17 @@
   "bugs": {
     "url": "https://github.com/jonasmalacofilho/git-cache-http-server/issues"
   },
-  "homepage": "https://github.com/jonasmalacofilho/git-cache-http-server#readme"
+  "homepage": "https://github.com/jonasmalacofilho/git-cache-http-server#readme",
+  "devDependencies": {
+    "haxe": "^5.0.0"
+  },
+  "haxeDependencies": {
+    "haxe": "4.0.5",
+    "haxelib": "4.0.2"
+  },
+  "scripts": {
+    "installHaxelibs": "haxelib --always install all",
+    "build": "haxe build.hxml",
+    "prepare": "npm run installHaxelibs && npm run build"
+  }
 }

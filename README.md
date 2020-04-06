@@ -58,22 +58,34 @@ systemctl daemon-reload
 systemctl start git-cache-http-server
 ```
 
-# Working on the sources
+# Working with the Haxe sources
 
-This is only needed if you want to change the Haxe source code in `src/`.
+To modify the code or use the latest features and fixes, it is necessary to
+build the Haxe sources in `src/`.
 
-Requirements: [Haxe](https://haxe.org) (`haxe` and `haxelib`).  If you prefer
-to manage the build dependencies manually, check out [`build.hxml`](build.hxml)
-for the required libraries.
+The process of installing Haxe, any additional dependencies, and building the
+project has been automated with the use of a `prepare` script, and should work
+transparently with the usual npm commands.  The resulting JS script will be
+placed in `bin/`.
 
 ```
-haxelib newrepo
-haxelib install build.hxml
-haxe build.hxml
+# install development dependencies and build
+npm install
+
+# install the built package globally
+npm install --global
 ```
 
-And in order to use the locally modified version: `npm link` (this changes the
-global NPM space).
+Additionally, the following scripts are available should there be a need to
+update the Haxe dependencies or quickly rebuild the Haxe code alone:
+
+```
+npm run installHaxelibs
+npm run build
+```
+
+Note: after upgrading it might be necessary to purge old `.haxelib` and
+`node_modules` directories, as well any remaining of old installations.
 
 # Implementation
 
