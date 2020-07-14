@@ -55,7 +55,7 @@ class Main {
 	static function fetch(remote, local, callback)
 	{
 		ChildProcess.exec('git -C "$local" remote set-url origin "$remote"', function(err, stdout, stderr) {
-			ChildProcess.exec('git -C "$local" fetch --quiet', callback);
+			ChildProcess.exec('git -C "$local" fetch --quiet --prune --prune-tags', callback);
 		});
 	}
 
