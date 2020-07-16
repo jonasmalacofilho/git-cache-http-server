@@ -1,7 +1,0 @@
---js bin/git-cache-http-server.js
---main Main
---class-path src
---library hxnodejs
---library jmf-npm-externs:git:https://github.com/jonasmalacofilho/jmf-npm-externs.hx#master
---macro BuildUtils.addShebang("/usr/bin/env", "node")
---macro BuildUtils.makeExecutable()
