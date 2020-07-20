@@ -1,8 +1,5 @@
-A caching Git HTTP server
-============================
-
-Mirror remote repositories and serve them over HTTP, automatically updating
-them as needed.
+git-cache-http-server – cache remote repositories and serve them over HTTP
+==========================================================================
 
 Currently supported client operations are fetch and clone.  Authentication to
 the upstream repository is always enforced (for now, only HTTP Basic is
@@ -42,10 +39,21 @@ git config --global url."http://gitcache:1234/".insteadOf https://
 
 # Installing
 
-Requirements: `nodejs` and `git`.
+The only runtime dependency are the official `git` executables.
+
+Some Linux distributions may have a package for this.  Otherwise installing
+from sources is easy, just follow the steps in the [working with the Rust
+sources](#working-with-the-rust-sources) section.
 
 ```
-npm install --global git-cache-http-server
+$ # clone the repository (adjust the protocol)
+$ git clone https://github.com/jonasmalacofilho/git-cache-http-server
+
+$ # build and install
+$ cargo install --release
+
+$ git-cache-http-server --version
+git-cache-http-server 0.1.0
 ```
 
 To install a cache service on Linux systems, check the example
@@ -61,37 +69,30 @@ systemctl start git-cache-http-server
 systemctl enable git-cache-http-server
 ```
 
-# Working with the Haxe sources
+# Working with the Rust sources
 
-To modify the code or use the latest features and fixes, it is necessary to
-build the Haxe sources in `src/`.
+Building and installing the software from sources allows you access to the
+latest features and fixes and the ability to make changes as well.
 
-The process of installing Haxe, any additional dependencies, and building the
-project has been automated with the use of a `prepare` script, and should work
-transparently with the usual npm commands.  The resulting JS script will be
-placed in `bin/`.
-
-```
-# clone the repository (adjust the protocol)
-git clone https://github.com/jonasmalacofilho/git-cache-http-server
-
-# install development dependencies and build the sources
-npm install
-
-# install the built code globally (might require sudo)
-npm install --global
-```
-
-Additionally, the following scripts are available should there be a need to
-update the Haxe dependencies or quickly rebuild the Haxe code alone:
+As with most Rust projects, `cargo` is used to manage the build, testing and
+installing the software.  Make sure you have a Rust (stable) environment, and
+`cargo`.
 
 ```
-npm run installHaxelibs
-npm run build
-```
+$ # clone the repository (adjust the protocol)
+$ git clone https://github.com/jonasmalacofilho/git-cache-http-server
 
-Note: after upgrading it might be necessary to purge old `.haxelib` and
-`node_modules` directories, as well any remaining of old installations.
+$ # build or run locally with debug information
+$ cargo build
+$ cargo run -- --version
+
+$ # run the test suite
+$ cargo test
+
+$ # install globally on the OS (rebuilds in a separate temporary directory)
+$ cargo install --release
+$ git-cache-http-server 0.1.0
+```
 
 # Implementation
 
@@ -102,5 +103,5 @@ References:
 
  - [Transfer protocols on the Git Book](http://git-scm.com/book/en/v2/Git-Internals-Transfer-Protocols)
  - [Git documentation on the HTTP transfer protocols](https://github.com/git/git/blob/master/Documentation/technical/http-protocol.txt)
- - [Source code for the GitLab workhorse](https://gitlab.com/gitlab-org/gitlab-workhorse/blob/master/handlers.go)
  - [Source code for `git-http-backend`](https://github.com/git/git/blob/master/http-backend.c)
+ - [~~Source code for the GitLab workhorse~~](https://gitlab.com/gitlab-org/gitlab-workhorse/blob/master/handlers.go)
