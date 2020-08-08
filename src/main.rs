@@ -1,4 +1,4 @@
-use git_cache_http_server::{parse_uri, parse_authorization};
+use git_cache_http_server::{parse_authorization, parse_uri};
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Method, Request, Response, Server, StatusCode};
 use std::convert::Infallible;
@@ -6,18 +6,23 @@ use std::net::SocketAddr;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
-#[derive(StructOpt, Debug)]
+/// A caching Git HTTP server.
+///
+/// Serve local mirror repositories over HTTP/HTTPS, updating them as they are requested.
+#[derive(StructOpt)]
 struct Opt {
+    /// Location of the git cache.
     #[structopt(
         short,
         long,
         parse(from_os_str),
         default_value = "/var/cache/git",
-        help = "Location of the git cache",
         name = "path"
     )]
     cache_dir: PathBuf,
-    #[structopt(short, long, default_value = "8080", help = "Bind to port")]
+
+    /// Bind to port.
+    #[structopt(short, long, default_value = "8080")]
     port: u16,
 }
 

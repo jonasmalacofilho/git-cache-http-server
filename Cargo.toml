@@ -10,6 +10,3 @@ futures = "0.3"
 hyper = "0.13"
 structopt = "0.3"
 tokio = { version = "0.2", features = ["macros", "rt-threaded", "process"] }
-
-[profile.test]
-doctest = true
