@@ -1,6 +1,6 @@
-use git_cache_http_server::{parse_authorization, parse_uri};
+use git_cache_http_server::first_attempt;
 use hyper::service::{make_service_fn, service_fn};
-use hyper::{Body, Method, Request, Response, Server, StatusCode};
+use hyper::{Body, Request, Response, Server};
 use std::convert::Infallible;
 use std::net::SocketAddr;
 use std::path::PathBuf;
@@ -28,12 +28,15 @@ struct Opt {
 
 async fn http_service(req: Request<Body>) -> Result<Response<Body>, Infallible> {
     eprintln!("{} {}", req.method(), req.uri());
-    let auth = parse_authorization(req.headers()).expect("failed to parse auth");
+    let auth = first_attempt::parse_authorization(req.headers()).expect("failed to parse auth");
     if let Some(basic_auth) = auth {
         eprintln!("requested by {}", basic_auth.safe_username());
     }
-    let uri_info = parse_uri(req.uri()).expect("failed to parse request URI");
-    eprintln!("requesting service {} from repository {}", uri_info.service, uri_info.repository);
+    let uri_info = first_attempt::parse_uri(req.uri()).expect("failed to parse request URI");
+    eprintln!(
+        "requesting service {} from repository {}",
+        uri_info.service, uri_info.repository
+    );
     Ok(Response::new(Body::empty()))
 }
 

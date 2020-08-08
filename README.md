@@ -1,13 +1,14 @@
-git-cache-http-server – cache remote repositories and serve them over HTTP
-==========================================================================
+# A caching Git HTTP server
 
-Currently supported client operations are fetch and clone.  Authentication to
-the upstream repository is always enforced (for now, only HTTP Basic is
-supported), but public repositories can be used as well.
+Cache remote repositories and serve them over HTTP.
 
-# Usage
+~~Currently supported client operations are fetch and clone, and authentication to
+the upstream repository is always enforced.~~
+
+## Starting the caching server
 
 ```
+$ git-cache-http-server --help
 Usage:
   git-cache-http-server.js [options]
 
@@ -16,92 +17,47 @@ Options:
   -p,--port <port>        Bind to port [default: 8080]
   -h,--help               Print this message
   --version               Print the current version
+
+$ git-cache-http-server
 ```
 
-The upstream remote is extracted from the URL, taking the first component as
-the remote hostname.
+## Using from git clients
 
-Example:
+The general idea is that instead of the upstream URL, the client should be
+configured to use a corresponding URL on the caching server.
 
-```
-git-cache-http-server --port 1234 --cache-dir /tmp/cache/git &
-git clone http://localhost:1234/github.com/jonasmalacofilho/git-cache-http-server
-```
+The server takes the upstream remote from the URL, taking the first component as
+the remote host, and the rest as the path to the specific repository.
 
-If you run your git-cache on a dedicated server or container (i.e. named
-gitcache), you can then also configure git to always use your cache like in the
-following example (don't use this configuration on the git-cache machine
-itself):.
+For example, assuming a local cache server at `localhost:8080`, cloning this
+repository would require:
 
 ```
-git config --global url."http://gitcache:1234/".insteadOf https://
+git clone http://localhost:8080/github.com/jonasmalacofilho/git-cache-http-server
 ```
 
-# Installing
-
-The only runtime dependency are the official `git` executables.
-
-Some Linux distributions may have a package for this.  Otherwise installing
-from sources is easy, just follow the steps in the [working with the Rust
-sources](#working-with-the-rust-sources) section.
+If you the cache server runs on a dedicated box or container, it is also
+possible to configure git to always use the cache for any HTTPS remote (but do
+not use this on the system that hosts the caching server itself):
 
 ```
-$ # clone the repository (adjust the protocol)
-$ git clone https://github.com/jonasmalacofilho/git-cache-http-server
-
-$ # build and install
-$ cargo install --release
-
-$ git-cache-http-server --version
-git-cache-http-server 0.1.0
+git config --global url."http://git-cache:8080/".insteadOf https://
 ```
 
-To install a cache service on Linux systems, check the example
-`doc/git-cache-http-server.service` unit file.
+## Installing
 
-For Systemd init users that file should not require major tweaks, other than
-specifying a different than default port number or cache directory.  After
-installed in the proper Systemd unit path for your distribution:
+To be written.
 
-```
-systemctl daemon-reload
-systemctl start git-cache-http-server
-systemctl enable git-cache-http-server
-```
+## Working with the Rust sources
 
-# Working with the Rust sources
+To be written.
 
-Building and installing the software from sources allows you access to the
-latest features and fixes and the ability to make changes as well.
+## Implementation
 
-As with most Rust projects, `cargo` is used to manage the build, testing and
-installing the software.  Make sure you have a Rust (stable) environment, and
-`cargo`.
+Useful references:
 
-```
-$ # clone the repository (adjust the protocol)
-$ git clone https://github.com/jonasmalacofilho/git-cache-http-server
-
-$ # build or run locally with debug information
-$ cargo build
-$ cargo run -- --version
-
-$ # run the test suite
-$ cargo test
-
-$ # install globally on the OS (rebuilds in a separate temporary directory)
-$ cargo install --release
-$ git-cache-http-server 0.1.0
-```
-
-# Implementation
-
-The current implementation is somewhat oversimplified; any help in improving it
-is greatly appreciated!
-
-References:
-
- - [Transfer protocols on the Git Book](http://git-scm.com/book/en/v2/Git-Internals-Transfer-Protocols)
- - [Git documentation on the HTTP transfer protocols](https://github.com/git/git/blob/master/Documentation/technical/http-protocol.txt)
- - [Source code for `git-http-backend`](https://github.com/git/git/blob/master/http-backend.c)
+ - [Pro Git: Git on the Server - The Protocols](https://git-scm.com/book/en/v2/Git-on-the-Server-The-Protocols)
+ - [Pro Git: Git Internals - Transfer Protocols](http://git-scm.com/book/en/v2/Git-Internals-Transfer-Protocols)
+ - [git Documentation: HTTP transfer protocols](https://github.com/git/git/blob/master/Documentation/technical/http-protocol.txt)
+ - [git: `git-http-backend.c`](https://github.com/git/git/blob/master/http-backend.c)
  - [~~Source code for the GitLab workhorse~~](https://gitlab.com/gitlab-org/gitlab-workhorse/blob/master/handlers.go)
