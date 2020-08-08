@@ -40,8 +40,8 @@ const GIT_UPLOAD_PACK: &str = "/git-upload-pack";
 
 #[derive(Debug, PartialEq)]
 pub struct UriInfo<'a> {
-    repository: &'a str,
-    service: &'a str,
+    pub repository: &'a str,
+    pub service: &'a str,
 }
 
 /// Parses incoming URIs into a remote repository and desired service.

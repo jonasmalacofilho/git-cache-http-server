@@ -28,21 +28,13 @@ struct Opt {
 
 async fn http_service(req: Request<Body>) -> Result<Response<Body>, Infallible> {
     eprintln!("{} {}", req.method(), req.uri());
-    let _auth = dbg!(parse_authorization(req.headers())); // FIXME
-    let mut res = Response::new(Body::empty());
-    match (req.method(), parse_uri(req.uri())) {
-        (&Method::GET, Ok(_)) => {
-            *res.body_mut() = Body::from("All good?\n");
-        }
-        (&Method::POST, Ok(_)) => {
-            *res.body_mut() = Body::from("All good?\n");
-        }
-        _ => {
-            *res.status_mut() = StatusCode::NOT_FOUND;
-        }
+    let auth = parse_authorization(req.headers()).expect("failed to parse auth");
+    if let Some(basic_auth) = auth {
+        eprintln!("requested by {}", basic_auth.safe_username());
     }
-    eprintln!("{} {}  {}", req.method(), req.uri(), res.status());
-    Ok(res)
+    let uri_info = parse_uri(req.uri()).expect("failed to parse request URI");
+    eprintln!("requesting service {} from repository {}", uri_info.service, uri_info.repository);
+    Ok(Response::new(Body::empty()))
 }
 
 #[tokio::main]
