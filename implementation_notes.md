@@ -35,10 +35,12 @@ git-cache-http-server:
 ## Git Smart Protocol
 
 Clone/fetch:
+- client runs git-fetch-pack, which connects to git-upload-pack on the server
 - GET info/refs?service=git-upload-pack: get refs
 - POST git-upload-pack: get data
 
 Push:
+- client runs git-send-pack, which connects to git-receive-pack on the server
 - GET info/refs?service=git-receive-pack: get refs
 - POST git-receive-pack: send data
 
