@@ -57,7 +57,7 @@ To be written.
 Useful references:
 
  - [Pro Git: Git on the Server - The Protocols](https://git-scm.com/book/en/v2/Git-on-the-Server-The-Protocols)
- - [Pro Git: Git Internals - Transfer Protocols](http://git-scm.com/book/en/v2/Git-Internals-Transfer-Protocols)
+ - [Pro Git: Git Internals - Transfer Protocols](https://git-scm.com/book/en/v2/Git-Internals-Transfer-Protocols)
  - [git Documentation: HTTP transfer protocols](https://github.com/git/git/blob/master/Documentation/technical/http-protocol.txt)
  - [git: `git-http-backend.c`](https://github.com/git/git/blob/master/http-backend.c)
  - [~~Source code for the GitLab workhorse~~](https://gitlab.com/gitlab-org/gitlab-workhorse/blob/master/handlers.go)

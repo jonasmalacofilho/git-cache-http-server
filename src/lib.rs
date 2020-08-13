@@ -16,6 +16,7 @@ impl Cache {
     pub fn open(&mut self, upstream: &str) -> Result<Repository, Box<dyn Error>> {
         let mut local_path = self.directory.clone();
         local_path.push(upstream);
+
         Repository::open(&local_path)
             .or_else(|err| {
                 if err.code() == git2::ErrorCode::NotFound {
@@ -35,8 +36,10 @@ mod tests {
     #[test]
     fn smoke_test() {
         let dir = tempfile::tempdir().unwrap();
+
         let mut cache = Cache::new(&dir);
         let repo = cache.open("example.com/foo/bar").unwrap();
+
         assert!(repo.path().starts_with(dir.path()));
         assert!(repo.path().ends_with("example.com/foo/bar/.git"));
     }
