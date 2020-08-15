@@ -9,7 +9,8 @@
  - [git Documentation: HTTP transfer protocols](https://github.com/git/git/blob/master/Documentation/technical/http-protocol.txt)
  - [git Documentation: Packfile transfer protocols](https://github.com/git/git/blob/master/Documentation/technical/pack-protocol.txt)
  - [git: `git-http-backend.c`](https://github.com/git/git/blob/master/http-backend.c)
- - [~~Source code for the GitLab workhorse~~](https://gitlab.com/gitlab-org/gitlab-workhorse/blob/master/handlers.go)
+ - [GitLab Architecture Overview: Git Request Cycle](https://gitlab.com/gitlab-org/gitlab/-/blob/9e404d35ecca9e8afae2c844ad45261e81972eb2/doc/development/architecture.md#gitlab-git-request-cycle)
+ - [GitLab Gitaly: `internal/service/smarthttp/*.go`](https://gitlab.com/gitlab-org/gitaly/-/tree/19e2caa3a8a9fe390b568dd8d2b2a565be6094a7/internal/service/smarthttp)
 
 ## Cache operations
 
