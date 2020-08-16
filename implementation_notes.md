@@ -15,8 +15,9 @@
 ## Cache operations
 
 ```
-client <- cache <- upstream
-client -> (fwd) -> upstream
+          ______ api ________
+client <- (cache <- upstream)
+client -> ((fwd) -> upstream)
 ```
 
 ## Cache components
@@ -32,6 +33,46 @@ git-cache-http-server:
       + url parsing: parse URLs
 ```
 
+## Use case
+
+```
+             /github.com/foo/bar                       /foo/bar
+client: GET, upstream_spec, credentials -> cache: GET, upstream_url, credentials;
+						  "pipe" response to client
+client: POST, upstream_spec, credentials -> cache: POST, upstream_url, credentials (update myself);
+						   "tee" stdin/stdout `git-upload-pack` to client socket (serve)
+
+let client: TcpStream = ...;
+let upstream_url = ...;
+let credentials = ...;
+
+update(local_path, upstream_url, credentials) {
+	exec_with(local_path, credentials, "git fetch https://github.com/jonasmalacofilho/git-cache-http-server '+refs/*:refs/*'")
+}
+
+get_info_refs_to_client(client, ...) {
+	update(local_path, upstream_url, credentials); // git fetch <url with credentials> or Authorization: Basic ...
+	let local_path = format!("/var/cache/git/{}", upstream_url);
+	tee_git_service("git-upload-pack", &client, infos=true); // <cache> <-> <client socket>
+	client.flush();
+}
+
+tee_upload_service_to_client(client, ...) {
+	let local_path = format!("/var/cache/git/{}", upstream_url);
+	tee_git_service("git-upload-pack", &client, infos=false); // <cache> <-> <client socket>
+	client.flush();
+}
+
+// stuff to deal with:
+// progress (inserts stuff in the stream)
+// capabilities (modify stream to adjust capabilities)
+
+let repository = cache_clone#1("github.com/jonasmalacofilho/git-cache-http-server", credentials); // cache: clones
+let repository = cache_clone#2("github.com/jonasmalacofilho/git-cache-http-server", credentials); // cache: fetch
+
+cache_fetch#1(&mut repository, "github.com/jonasmalacofilho/git-cache-http-server", credentials); // cache: fetch
+cache_fetch#2(&mut repository, "github.com/jonasmalacofilho/git-cache-http-server", credentials); // cache: fetch
+```
 
 ## Git Smart Protocol
 
@@ -58,3 +99,7 @@ Capabilities:
 - server advertises
 - client puts them into effect
 - may require conversions
+
+## Tricky bits
+
+- document that oauth token should not omit the username: because TODO
