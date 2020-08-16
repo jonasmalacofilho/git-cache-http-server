@@ -71,7 +71,7 @@ authoritative upstream repository; it MUST do this by default.
 			      /                 \
 		 git Smart HTTP server      local repositories
 		  /                 \               \
-         git-upload-pack     git-receive-pack     git fetch                     # git manipulation
+         git-upload-pack     git-receive-pack     git-{init,fetch}              # git manipulation
 ```
 
 ### Thoughts: APIs
