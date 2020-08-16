@@ -12,28 +12,51 @@
  - [GitLab Architecture Overview: Git Request Cycle](https://gitlab.com/gitlab-org/gitlab/-/blob/9e404d35ecca9e8afae2c844ad45261e81972eb2/doc/development/architecture.md#gitlab-git-request-cycle)
  - [GitLab Gitaly: `internal/service/smarthttp/*.go`](https://gitlab.com/gitlab-org/gitaly/-/tree/19e2caa3a8a9fe390b568dd8d2b2a565be6094a7/internal/service/smarthttp)
 
-## Cache operations
+## Definitions
+
+**Client:** end user (interactive or automated) running `git` or other git
+client.
+
+**Cache [server]:** `git-cache-http-server` instance.
+
+**Upstream:** upstream git HTTP server for a particular repository.
+
+## Operations
 
 ```
-          ______ api ________
-client <- (cache <- upstream)
-client -> ((fwd) -> upstream)
+git fetch, git clone:    client <- cache <- upstream
+git push:                client -> (fwd) -> upstream
 ```
 
-## Cache components
+Fetch and clone operations are cached, and the client fetches/clones the cache
+(not the upstream repository).  The cache server SHOULD keep itself up-to-date
+with the upstream repository state in terms of git references (and git objects)
+and authorized users.
+
+In contrast with fetch and clone, push operations are merely proxied: the
+upstream repository is the authoritative one, and it may want/need to refuse
+updates to certain references.  The cache server merely proxies the requests
+during these operations so that the user does not need to use separate remotes.
+
+The cache server SHOULD authenticate all client requests against the
+authoritative upstream repository; it MUST do this by default.
+
+## Architecture
 
 ```
-git-cache-http-server:
-  + single client cache API: transparently (?) cache
-  + git smart http server:
-    + git smart protocol: implements git-<name>-services
-    + http server:
-      + server: handle multiple connections
-      + http: handle HTTP requests and responses
-      + url parsing: parse URLs
+			     git-cache-http-server
+				       |
+			      <async http server>                               # async http server
+				       |
+				     tokio                                      # async runtime
+			       ____/       \____
+			      /                 \
+		 git smart HTTP server      local repositories
+		  /                 \               \
+         git-upload-pack     git-receive-pack     git fetch                     # git manipulation
 ```
 
-## Use case
+### Thoughts: APIs
 
 ```
              /github.com/foo/bar                       /foo/bar
