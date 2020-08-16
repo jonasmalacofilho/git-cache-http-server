@@ -1,5 +1,21 @@
 # Implementation notes
 
+For the purposes of synchronization, a git repository can be viewed as a simple
+bag of tag, commit, tree and blob objects, plus some references.
+
+Synchronization of git repositories entails transferring objects and
+synchronizing the references.  As references are simply pointers to commits or
+tags, they are very lightweight; the bulk of the repository is the object
+database.
+
+Because of this, in some scenarios it may be desirable to cache the object
+database closer to the end users.  Two particular use cases are: automated
+builds and localized teams working on off-site repositories.
+
+In both cases it is likely that a significant part of the object database will
+be transfered over and over again.  At the same time, it is possible to explore
+the locality to reduce time (and bandwidth) spent.
+
 ## References
 
  - [Pro Git: Git Internals - Transfer Protocols](https://git-scm.com/book/en/v2/Git-Internals-Transfer-Protocols)
@@ -9,8 +25,8 @@
  - [git Documentation: HTTP transfer protocols](https://github.com/git/git/blob/master/Documentation/technical/http-protocol.txt)
  - [git Documentation: Packfile transfer protocols](https://github.com/git/git/blob/master/Documentation/technical/pack-protocol.txt)
  - [git: `git-http-backend.c`](https://github.com/git/git/blob/master/http-backend.c)
- - [GitLab Architecture Overview: Git Request Cycle](https://gitlab.com/gitlab-org/gitlab/-/blob/9e404d35ecca9e8afae2c844ad45261e81972eb2/doc/development/architecture.md#gitlab-git-request-cycle)
- - [GitLab Gitaly: `internal/service/smarthttp/*.go`](https://gitlab.com/gitlab-org/gitaly/-/tree/19e2caa3a8a9fe390b568dd8d2b2a565be6094a7/internal/service/smarthttp)
+ - [GitLab Architecture Overview: Git Request Cycle](https://gitlab.com/gitlab-org/gitlab/-/blob/9e404d35ecca/doc/development/architecture.md#gitlab-git-request-cycle)
+ - [GitLab Gitaly: `internal/service/smarthttp/*.go`](https://gitlab.com/gitlab-org/gitaly/-/tree/19e2caa3a8a9/internal/service/smarthttp)
 
 ## Definitions
 
@@ -20,6 +36,8 @@ client.
 **Cache [server]:** `git-cache-http-server` instance.
 
 **Upstream:** upstream git HTTP server for a particular repository.
+
+**Operation:** git transfer (fetch/clone/push) initiated by the client.
 
 ## Operations
 
@@ -51,7 +69,7 @@ authoritative upstream repository; it MUST do this by default.
 				     tokio                                      # async runtime
 			       ____/       \____
 			      /                 \
-		 git smart HTTP server      local repositories
+		 git Smart HTTP server      local repositories
 		  /                 \               \
          git-upload-pack     git-receive-pack     git fetch                     # git manipulation
 ```
@@ -97,32 +115,42 @@ cache_fetch#1(&mut repository, "github.com/jonasmalacofilho/git-cache-http-serve
 cache_fetch#2(&mut repository, "github.com/jonasmalacofilho/git-cache-http-server", credentials); // cache: fetch
 ```
 
-## Git Smart Protocol
+## Primer on the git Smart HTTP Protocol
 
 Clone/fetch:
-- client runs git-fetch-pack, which connects to git-upload-pack on the server
-- GET info/refs?service=git-upload-pack: get refs
-- POST git-upload-pack: get data
+- client runs `git-fetch-pack`, which connects to `git-upload-pack` on the
+  server
+- gets refs with `GET /<repository>/info/refs?service=git-upload-pack`
+- gets objects with `POST /<repository>/git-upload-pack`
 
 Push:
-- client runs git-send-pack, which connects to git-receive-pack on the server
-- GET info/refs?service=git-receive-pack: get refs
-- POST git-receive-pack: send data
+- client runs `git-send-pack`, which connects to `git-receive-pack` on the
+  server
+- gets refs with `GET /<repository>/info/refs?service=git-receive-pack`
+- sends objects with `POST /<repository>/git-receive-pack`
 
 Headers:
 - never cache
-- valid responses are: 200 (ok), 404 (not found), 410 (gone), 304 (not modified) and 403 (forbidden)
+- valid responses are: 200 (ok), 404 (not found), 410 (gone), 304 (not
+  modified) and 403 (forbidden)
 - response content-type must be: application/x-$servicename-advertisement
 
 Protocol versions:
-- version 2 exists: if supported by libgit2
+- there are two of them
+- version 2 is multiplexed by default; version 1 requires the `side-band` or
+  `side-band-64k` capabilities for this
 
-Capabilities:
-- of interest: side-band-64k (to multiplex progress information)
+Capabilities (protocol version 1):
+- of possible interest: `side-band-64k` to multiplex progress information
 - server advertises
 - client puts them into effect
-- may require conversions
+- (thus) only in effect during the second/POST request
 
 ## Tricky bits
 
-- document that oauth token should not omit the username: because TODO
+- the cache server may run on a host with a very old version of `git`
+- document that oauth token should not omit the username: the cache server
+  should log all operations, but tokens are sanitized
+- understand if/how submodules requires any special handling
+
+[1] https://github.com/git/git/blob/878e727637ec/Documentation/technical/http-protocol.txt#L41-L49
