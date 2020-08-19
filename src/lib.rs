@@ -1,6 +1,38 @@
-use git2::{self, Repository};
-use std::error::Error;
 use std::path::{Path, PathBuf};
+
+pub struct Repository {
+    local_path: PathBuf,
+    upstream_url: String, // FIXME
+}
+
+impl Repository {
+    pub fn local_path(&self) -> &PathBuf {
+        &self.local_path
+    }
+
+    pub fn upstream_url(&self) -> &str {
+        self.upstream_url.as_str()
+    }
+
+    pub fn update(&mut self, _credentials: &Credentials) -> Result<(), GitError> {
+        todo!()
+    }
+}
+
+pub struct Credentials {
+}
+
+#[derive(thiserror::Error, Debug, PartialEq)]
+pub enum GitError {
+    #[error("access not granted by upstream")]
+    AccessNotGranted,
+}
+
+impl Credentials {
+    pub fn new() -> Credentials {
+        Credentials {}
+    }
+}
 
 pub struct Cache {
     directory: PathBuf,
@@ -13,18 +45,17 @@ impl Cache {
         }
     }
 
-    pub fn open(&mut self, upstream: &str) -> Result<Repository, Box<dyn Error>> {
+    pub fn open(&mut self, upstream: &str) -> Result<Repository, anyhow::Error> {
         let mut local_path = self.directory.clone();
         local_path.push(upstream);
+        if !matches!(local_path.extension(), Some(ext) if ext.to_str() == Some("git")) {
+            local_path.set_extension("git");
+        }
 
-        Repository::open(&local_path)
-            .or_else(|err| {
-                if err.code() == git2::ErrorCode::NotFound {
-                    return Repository::init(&local_path);
-                }
-                Err(err)
-            })
-            .map_err(|x| x.into())
+        // git init --base <local_path>
+
+
+        Ok(Repository { local_path, upstream_url: upstream.to_string() })
     }
 }
 
@@ -36,42 +67,21 @@ mod tests {
     #[test]
     fn smoke_test() {
         let dir = tempfile::tempdir().unwrap();
-
         let mut cache = Cache::new(&dir);
+
         let repo = cache.open("example.com/foo/bar").unwrap();
 
-        assert!(repo.path().starts_with(dir.path()));
-        assert!(repo.path().ends_with("example.com/foo/bar/.git"));
-    }
+        assert!(repo.local_path().starts_with(dir.path()), "{:?}", repo.local_path());
+        assert!(repo.local_path().ends_with("example.com/foo/bar.git"), "{:?}", repo.local_path());
 
-    #[test]
-    fn git2_fetch_smoke_test() {
-        let dir = tempfile::tempdir().unwrap();
-        let mut cache = Cache::new(&dir);
+        // let credentials = Credentials::new();
 
-        let upstream = "github.com/jonasmalacofilho/git-cache-http-server";
-        let repository = cache.open(upstream).expect("could not open repository");
+        // let mut repo = cache.open("github.com/jonasmalacofilho/git-cache-http-server").unwrap();
+        // assert_eq!(repo.update(&credentials), Ok(()));
 
-        // use this copy instead of really fetch from GitHub
-        let mut remote = repository.remote_anonymous(".git").unwrap();
+        // repo.serve_upload_pack();
 
-        remote
-            .fetch(&["master"], None, None)
-            .expect("could not fetch from remote");
-
-        let objects = repository.odb().expect("could not get object database");
-        let some_commit = "e22660e40203ffe4a3f24ebba616529d92a6d085";
-
-        let short_len = 12;
-        let short_id = git2::Oid::from_str(&some_commit[0..short_len]).unwrap();
-
-        assert_eq!(
-            objects
-                .exists_prefix(short_id, short_len)
-                .unwrap()
-                .to_string(),
-            some_commit
-        );
+        // repo.serve_receive_pack();
     }
 }
 
