@@ -6,13 +6,14 @@
 use super::Error;
 use std::path::Path;
 use std::process::Command;
+use url::Url;
 
 pub fn init_bare<P: AsRef<Path>>(path: P) -> Result<(), Error> {
     let status = Command::new("git")
         .args(&["init", "--bare", "--quiet"])
         .arg(path.as_ref().as_os_str())
         .status()
-        .map_err(|_| Error::CouldNotCreate)?; // FIXME include stdout/stderr
+        .map_err(|err| Error::CannotRunGit { reason: err.kind() })?;
     if status.success() {
         Ok(())
     } else {
@@ -20,12 +21,12 @@ pub fn init_bare<P: AsRef<Path>>(path: P) -> Result<(), Error> {
     }
 }
 
-pub fn fetch<P: AsRef<Path>>(path: P, url: &str, refspec: &str) -> Result<(), Error> {
+pub fn fetch<P: AsRef<Path>>(path: P, url: &Url, refspec: &str) -> Result<(), Error> {
     let status = Command::new("git")
         .current_dir(path.as_ref().as_os_str())
-        .args(&["fetch", "--quiet", url, refspec])
+        .args(&["fetch", "--quiet", url.as_str(), refspec])
         .status()
-        .map_err(|_| Error::UpdateFailure)?; // FIXME include stdout/stderr
+        .map_err(|err| Error::CannotRunGit { reason: err.kind() })?;
     if status.success() {
         Ok(())
     } else {
@@ -41,9 +42,10 @@ mod tests {
     #[test]
     fn smoke_test() {
         let local = tempfile::tempdir().unwrap();
-        let remote = "https://github.com/jonasmalacofilho/git-cache-http-server";
+        let remote =
+            Url::parse("https://github.com/jonasmalacofilho/git-cache-http-server").unwrap(); // FIXME not good for CI tests
 
-        assert!(init_bare(&local).is_ok());
-        assert!(fetch(&local, remote, "+refs/*:refs/*").is_ok());
+        assert_eq!(init_bare(&local), Ok(()));
+        assert_eq!(fetch(&local, &remote, "+refs/*:refs/*"), Ok(()));
     }
 }

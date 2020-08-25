@@ -22,6 +22,9 @@ pub struct Credentials {}
 
 #[derive(thiserror::Error, Debug, PartialEq)]
 pub enum Error {
+    #[error("cannot run git command: {reason:?}", )]
+    CannotRunGit { reason: io::ErrorKind },
+
     #[error("local path exists but not a repository")]
     ExistsButNotRepository,
 
@@ -117,8 +120,8 @@ mod tests {
 
     #[test]
     fn opens_in_empty_directory() {
-        use std::fs;
         const EXAMPLE_REPOSITORY: &str = "example.com/foo/bar.git";
+        use std::fs;
 
         let dir = tempfile::tempdir().unwrap();
         let mut cache = Cache::new(&dir);
@@ -130,9 +133,12 @@ mod tests {
     }
 }
 
-// Global FIXMEs/TODOs
-// - validate local paths
+// Global FIXMEs/TODOs:
+// - validate the local paths
 // - include git output in errors that come from git
+// - delete branches and tags from the cache as they are deleted on upstream
+// - only accept https URLs since they are the only one we can provide credentials to
+// - make sure no server credentials are used as a fallback to missing/invalid user credentials
 
 /// Mess from previous attempt (will eventually be removed)
 pub mod first_attempt;
