@@ -1,7 +1,8 @@
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
+
+mod git;
 
 pub struct Repository {
     local_path: PathBuf,
@@ -56,34 +57,22 @@ impl Cache {
             local_path.set_extension("git");
         }
 
-        fn init_repository(path: PathBuf) -> Result<Repository, Error> {
-            let status = Command::new("git")
-                .arg("init")
-                .arg("--bare")
-                .arg(path.as_os_str())
-                .stdout(Stdio::null())
-                .stderr(Stdio::null())
-                .status() // FIXME need to store stdout/stderr
-                .map_err(|_| Error::CouldNotCreate)?;
-            if status.success() {
-                Ok(Repository { local_path: path })
-            } else {
-                Err(Error::CouldNotCreate)
-            }
-        }
-
         match fs::metadata(&local_path) {
+            Err(e) if e.kind() == io::ErrorKind::NotFound => {
+                git::init_bare(&local_path)?;
+            }
             Ok(x) if x.is_dir() => {
                 if local_path.read_dir().unwrap().next().is_none() {
-                    init_repository(local_path)
+                    git::init_bare(&local_path)?;
                 } else {
-                    // let git error later if this isn't a real repository
-                    Ok(Repository { local_path })
+                    // assume it's a repository; later git calls will fail if it isn't, but at
+                    // least we didn't pollute an unrelated directory
                 }
             }
-            Err(e) if e.kind() == io::ErrorKind::NotFound => init_repository(local_path),
-            _ => Err(Error::CouldNotCreate),
+            _ => Err(Error::ExistsButNotRepository)?,
         }
+
+        Ok(Repository { local_path })
     }
 }
 
@@ -127,7 +116,7 @@ mod tests {
     }
 
     #[test]
-    fn opens_in_emptyt_directory() {
+    fn opens_in_empty_directory() {
         use std::fs;
         const EXAMPLE_REPOSITORY: &str = "example.com/foo/bar.git";
 
@@ -140,6 +129,10 @@ mod tests {
         assert!(dir.path().join(EXAMPLE_REPOSITORY).join("HEAD").is_file());
     }
 }
+
+// Global FIXMEs/TODOs
+// - validate local paths
+// - include git output in errors that come from git
 
 /// Mess from previous attempt (will eventually be removed)
 pub mod first_attempt;
