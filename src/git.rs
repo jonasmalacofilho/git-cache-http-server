@@ -43,7 +43,7 @@ use std::path::Path;
 use std::process::Stdio;
 use tokio::process::{Child, Command};
 
-pub async fn upload_pack<P: AsRef<Path>>(
+pub fn upload_pack<P: AsRef<Path>>(
     path: P,
     stateless_rpc: bool,
     advertise_refs: bool,
@@ -87,12 +87,8 @@ mod tests {
 
         assert_eq!(fetch(&local, &remote, "+refs/*:refs/*"), Ok(()));
 
-        let refs = upload_pack(&local, false, true, 1)
-            .await
-            .unwrap()
-            .wait_with_output()
-            .await
-            .unwrap();
+        let refs_service = upload_pack(&local, false, true, 1).unwrap();
+        let refs = refs_service.wait_with_output().await.unwrap();
         assert!(String::from_utf8_lossy(&refs.stdout).contains("HEAD"));
     }
 }
