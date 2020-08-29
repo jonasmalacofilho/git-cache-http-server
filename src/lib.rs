@@ -22,7 +22,7 @@ pub struct Credentials {}
 
 #[derive(thiserror::Error, Debug, PartialEq)]
 pub enum Error {
-    #[error("cannot run git command: {reason:?}", )]
+    #[error("cannot run git command: {reason:?}")]
     CannotRunGit { reason: io::ErrorKind },
 
     #[error("local path exists but not a repository")]
