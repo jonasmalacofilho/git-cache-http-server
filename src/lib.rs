@@ -53,7 +53,7 @@ impl Cache {
     }
 
     /// Open or create an existing local repository to cache `upstream`.
-    pub fn open(&mut self, upstream: &str) -> Result<Repository, Error> {
+    pub async fn open(&mut self, upstream: &str) -> Result<Repository, Error> {
         let mut local_path = self.directory.clone();
         local_path.push(upstream);
         if !matches!(local_path.extension(), Some(ext) if ext.to_str() == Some("git")) {
@@ -62,11 +62,11 @@ impl Cache {
 
         match fs::metadata(&local_path) {
             Err(e) if e.kind() == io::ErrorKind::NotFound => {
-                git::init_bare(&local_path)?;
+                git::init_bare(&local_path).await?;
             }
             Ok(x) if x.is_dir() => {
                 if local_path.read_dir().unwrap().next().is_none() {
-                    git::init_bare(&local_path)?;
+                    git::init_bare(&local_path).await?;
                 } else {
                     // assume it's a repository; later git calls will fail if it isn't, but at
                     // least we didn't pollute an unrelated directory
@@ -84,12 +84,12 @@ mod tests {
     use super::*;
     use tempfile;
 
-    #[test]
-    fn smoke_test() {
+    #[tokio::test]
+    async fn smoke_test() {
         let dir = tempfile::tempdir().unwrap();
         let mut cache = Cache::new(&dir);
 
-        let repo = cache.open("example.com/foo/bar").unwrap();
+        let repo = cache.open("example.com/foo/bar").await.unwrap();
 
         assert_eq!(
             repo.local_path().as_os_str(),
@@ -108,18 +108,18 @@ mod tests {
         // repo.serve_receive_pack();
     }
 
-    #[test]
-    fn opens_existing_repository() {
+    #[tokio::test]
+    async fn opens_existing_repository() {
         let dir = tempfile::tempdir().unwrap();
         let mut cache = Cache::new(&dir);
 
-        cache.open("example.com/foo/bar.git").unwrap();
+        cache.open("example.com/foo/bar.git").await.unwrap();
 
-        assert!(cache.open("example.com/foo/bar.git").is_ok());
+        assert!(cache.open("example.com/foo/bar.git").await.is_ok());
     }
 
-    #[test]
-    fn opens_in_empty_directory() {
+    #[tokio::test]
+    async fn opens_in_empty_directory() {
         const EXAMPLE_REPOSITORY: &str = "example.com/foo/bar.git";
         use std::fs;
 
@@ -128,7 +128,7 @@ mod tests {
 
         fs::create_dir_all(dir.path().join(EXAMPLE_REPOSITORY)).unwrap();
 
-        assert!(cache.open(EXAMPLE_REPOSITORY).is_ok());
+        assert!(cache.open(EXAMPLE_REPOSITORY).await.is_ok());
         assert!(dir.path().join(EXAMPLE_REPOSITORY).join("HEAD").is_file());
     }
 }
