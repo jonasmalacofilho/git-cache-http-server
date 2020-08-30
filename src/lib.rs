@@ -25,6 +25,9 @@ pub enum Error {
     #[error("cannot run git command: {reason:?}")]
     CannotRunGit { reason: io::ErrorKind },
 
+    #[error("cannot parse git version: {0}")]
+    CannotParseGitVersion(String),
+
     #[error("local path exists but not a repository")]
     ExistsButNotRepository,
 

@@ -4,16 +4,34 @@
 //! `git-receive-pack` services, this module wraps `git` commands.
 
 use crate::Error;
+use semver::Version;
 use std::path::Path;
 use std::process::Stdio;
 use tokio::process::{Child, Command};
 use url::Url;
 
+pub async fn version() -> Result<Version, Error> {
+    let output = Command::new("git")
+        .arg("--version")
+        .output()
+        .await
+        .map_err(|e| Error::CannotRunGit { reason: e.kind() })?;
+
+    let output = String::from_utf8_lossy(&output.stdout);
+
+    let output = output.trim();
+
+    let version = output.split_whitespace().next_back().unwrap(); // FIXME split_whitespace may return empty iterators
+
+    Version::parse(version).map_err(|_| Error::CannotParseGitVersion(output.to_owned()))
+}
+
 pub async fn init_bare<P: AsRef<Path>>(path: P) -> Result<(), Error> {
     let status = Command::new("git")
         .args(&["init", "--bare", "--quiet"])
         .arg(path.as_ref().as_os_str())
-        .status().await
+        .status()
+        .await
         .map_err(|err| Error::CannotRunGit { reason: err.kind() })?;
     if status.success() {
         Ok(())
@@ -26,7 +44,8 @@ pub async fn fetch<P: AsRef<Path>>(path: P, url: &Url, refspec: &str) -> Result<
     let status = Command::new("git")
         .current_dir(path.as_ref().as_os_str())
         .args(&["fetch", "--quiet", url.as_str(), refspec])
-        .status().await
+        .status()
+        .await
         .map_err(|err| Error::CannotRunGit { reason: err.kind() })?;
     if status.success() {
         Ok(())
@@ -65,20 +84,23 @@ pub fn upload_pack<P: AsRef<Path>>(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::git;
     use tempfile;
+    use url::Url;
 
     #[tokio::test]
     async fn smoke_test() {
+        assert!(git::version().await.is_ok());
+
         let local = tempfile::tempdir().unwrap();
         let remote =
             Url::parse("https://github.com/jonasmalacofilho/git-cache-http-server").unwrap(); // FIXME not good for CI tests
 
-        assert_eq!(init_bare(&local).await, Ok(()));
+        assert_eq!(git::init_bare(&local).await, Ok(()));
 
-        assert_eq!(fetch(&local, &remote, "+refs/*:refs/*").await, Ok(()));
+        assert_eq!(git::fetch(&local, &remote, "+refs/*:refs/*").await, Ok(()));
 
-        let refs_service = upload_pack(&local, false, true, 1).unwrap();
+        let refs_service = git::upload_pack(&local, false, true, 1).unwrap();
         let refs = refs_service.wait_with_output().await.unwrap();
         assert!(String::from_utf8_lossy(&refs.stdout).contains("HEAD"));
     }
