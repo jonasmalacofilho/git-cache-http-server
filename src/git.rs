@@ -18,12 +18,13 @@ pub async fn version() -> Result<Version, Error> {
         .map_err(|e| Error::CannotRunGit { reason: e.kind() })?;
 
     let output = String::from_utf8_lossy(&output.stdout);
-
     let output = output.trim();
 
-    let version = output.split_whitespace().next_back().unwrap(); // FIXME split_whitespace may return empty iterators
-
-    Version::parse(version).map_err(|_| Error::CannotParseGitVersion(output.to_owned()))
+    output
+        .split_whitespace()
+        .next_back()
+        .and_then(|v| Version::parse(&v).ok())
+        .ok_or(Error::CannotParseGitVersion(output.to_owned()))
 }
 
 pub async fn init_bare<P: AsRef<Path>>(path: P) -> Result<(), Error> {
@@ -32,11 +33,12 @@ pub async fn init_bare<P: AsRef<Path>>(path: P) -> Result<(), Error> {
         .arg(path.as_ref().as_os_str())
         .status()
         .await
-        .map_err(|err| Error::CannotRunGit { reason: err.kind() })?;
+        .map_err(|e| Error::CannotRunGit { reason: e.kind() })?;
+
     if status.success() {
         Ok(())
     } else {
-        Err(Error::CouldNotCreate) // FIXME include stdou/stderr
+        Err(Error::CouldNotCreate)
     }
 }
 
@@ -46,11 +48,12 @@ pub async fn fetch<P: AsRef<Path>>(path: P, url: &Url, refspec: &str) -> Result<
         .args(&["fetch", "--quiet", url.as_str(), refspec])
         .status()
         .await
-        .map_err(|err| Error::CannotRunGit { reason: err.kind() })?;
+        .map_err(|e| Error::CannotRunGit { reason: e.kind() })?;
+
     if status.success() {
         Ok(())
     } else {
-        Err(Error::UpdateFailure) // FIXME include stdou/stderr
+        Err(Error::UpdateFailure)
     }
 }
 
@@ -79,7 +82,7 @@ pub fn upload_pack<P: AsRef<Path>>(
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
-        .map_err(|err| Error::CannotRunGit { reason: err.kind() })
+        .map_err(|e| Error::CannotRunGit { reason: e.kind() })
 }
 
 #[cfg(test)]
@@ -90,11 +93,11 @@ mod tests {
 
     #[tokio::test]
     async fn smoke_test() {
-        assert!(git::version().await.is_ok());
+        let _git_version = git::version().await.unwrap();
 
         let local = tempfile::tempdir().unwrap();
         let remote =
-            Url::parse("https://github.com/jonasmalacofilho/git-cache-http-server").unwrap(); // FIXME not good for CI tests
+            Url::parse("https://github.com/jonasmalacofilho/git-cache-http-server").unwrap();
 
         assert_eq!(git::init_bare(&local).await, Ok(()));
 
