@@ -5,6 +5,10 @@ authors = ["Jonas Malaco <jonas@protocubo.io>"]
 edition = "2018"
 
 [dependencies]
+eyre = "0.6"
+semver = "0.10"
+url = "2.1"
+
 anyhow = "1.0"
 base64 = "0.12"
 futures = "0.3"
@@ -12,8 +16,6 @@ hyper = "0.13"
 structopt = "0.3"
 thiserror = "1.0"
 tokio = { version = "0.2", features = ["macros", "rt-threaded", "process"] }
-url = "2.1"
-semver = "0.10"
 
 [dev-dependencies]
-tempfile = "3"
+tempfile = "3.1"

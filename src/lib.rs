@@ -1,3 +1,4 @@
+use eyre::{bail, Result};
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
@@ -13,30 +14,12 @@ impl Repository {
         &self.local_path
     }
 
-    pub fn update(&mut self, _credentials: &Credentials) -> Result<(), Error> {
+    pub fn update(&mut self, _credentials: &Credentials) -> Result<()> {
         todo!()
     }
 }
 
 pub struct Credentials {}
-
-#[derive(thiserror::Error, Debug, PartialEq)]
-pub enum Error {
-    #[error("cannot run git command: {reason:?}")]
-    CannotRunGit { reason: io::ErrorKind },
-
-    #[error("cannot parse git version: {0}")]
-    CannotParseGitVersion(String),
-
-    #[error("local path exists but not a repository")]
-    ExistsButNotRepository,
-
-    #[error("could not create local repository")]
-    CouldNotCreate,
-
-    #[error("could not update from upstream")]
-    UpdateFailure,
-}
 
 impl Credentials {
     pub fn new() -> Credentials {
@@ -56,7 +39,7 @@ impl Cache {
     }
 
     /// Open or create an existing local repository to cache `upstream`.
-    pub async fn open(&mut self, upstream: &str) -> Result<Repository, Error> {
+    pub async fn open(&mut self, upstream: &str) -> Result<Repository> {
         let mut local_path = self.directory.clone();
         local_path.push(upstream);
         if !matches!(local_path.extension(), Some(ext) if ext.to_str() == Some("git")) {
@@ -75,7 +58,7 @@ impl Cache {
                     // least we didn't pollute an unrelated directory
                 }
             }
-            _ => Err(Error::ExistsButNotRepository)?,
+            _ => bail!("Directory exists but is not a repository: {:?}", local_path),
         }
 
         Ok(Repository { local_path })
