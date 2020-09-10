@@ -6,7 +6,7 @@
 use eyre::Result;
 use eyre::{eyre, WrapErr};
 
-use semver::Version;
+use versions::Version;
 
 use std::path::Path;
 use url::Url;
@@ -34,7 +34,7 @@ fn parse_version(input: &str) -> Result<Version> {
     input
         .split_whitespace()
         .next_back()
-        .and_then(|v| Version::parse(&v).ok())
+        .and_then(|v| Version::new(&v))
         .ok_or(eyre!("could not parse `git` version from: {}", input))
 }
 
@@ -99,9 +99,9 @@ pub fn upload_pack<P: AsRef<Path>>(
 #[cfg(test)]
 mod tests {
     use crate::git;
-    use semver::{Version, VersionReq};
     use tempfile;
     use url::Url;
+    use versions::Version;
 
     #[tokio::test]
     async fn init_fetch_and_upload_smoke_test() {
@@ -125,30 +125,31 @@ mod tests {
     async fn git_version_smoke_test() {
         let git_version = git::version().await.unwrap();
 
-        // FIXME: we eventually want to support git 1.8.3.1 because of old CentOS/RHEL (see #19)
-        assert!(VersionReq::parse(">=1.9.0").unwrap().matches(&git_version));
+        assert!(git_version >= Version::new("1.4.0").unwrap());
     }
 
     #[test]
     fn parses_1_9_and_later_versions() {
+        // the version number did not resemble semantic Version until 1.9.0
+        // (see: https://github.com/git/git/blob/master/Documentation/howto/maintain-git.txt)
+
         let input = "git version 2.26.0-rc2\n";
 
         assert_eq!(
             git::parse_version(input).unwrap(),
-            Version::parse("2.26.0-rc2").unwrap()
+            Version::new("2.26.0-rc2").unwrap()
         );
     }
 
     #[test]
-    #[ignore]
-    #[allow(unreachable_code)]
     fn parses_1_4_and_later_versions() {
-        // the "git version <number>\n" format has been stable at least since git 1.4.0, but
-        // the version number did not resemble semantic versioning until 1.9.0
-        // (see: https://github.com/git/git/blob/master/Documentation/howto/maintain-git.txt)
+        // the "git version <number>\n" format has been stable at least since git 1.4.0
 
         let input = "git version 1.8.3.1\n";
 
-        assert_eq!(git::parse_version(input).unwrap(), todo!());
+        assert_eq!(
+            git::parse_version(input).unwrap(),
+            Version::new("1.8.3.1").unwrap()
+        );
     }
 }
