@@ -131,11 +131,11 @@ mod tests {
 
     #[test]
     fn parses_1_9_and_later_versions() {
-        let input = "git version 2.26.2\n";
+        let input = "git version 2.26.0-rc2\n";
 
         assert_eq!(
             git::parse_version(input).unwrap(),
-            Version::parse("2.26.2").unwrap()
+            Version::parse("2.26.0-rc2").unwrap()
         );
     }
 
