@@ -1,4 +1,7 @@
 use eyre::{bail, Result};
+
+use std::collections::HashMap;
+
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
@@ -29,39 +32,60 @@ impl Credentials {
 
 pub struct Cache {
     directory: PathBuf,
+    registry: HashMap<PathBuf, Repository>,
 }
 
 impl Cache {
     pub fn new<P: AsRef<Path>>(directory: P) -> Cache {
         Cache {
             directory: directory.as_ref().to_path_buf(),
+            registry: HashMap::new(),
         }
     }
 
     /// Open or create an existing local repository to cache `upstream`.
-    pub async fn open(&mut self, upstream: &str) -> Result<Repository> {
+    pub async fn open(&mut self, upstream: &str) -> Result<&Repository> {
+        let local_path = self.local_path(upstream);
+
+        use std::collections::hash_map::Entry;
+
+        match self.registry.entry(local_path) {
+            Entry::Occupied(e) => Ok(e.into_mut()),
+            Entry::Vacant(e) => {
+                let local_path = e.key();
+
+                match fs::metadata(local_path) {
+                    Err(e) if e.kind() == io::ErrorKind::NotFound => {
+                        git::init_bare(local_path).await?;
+                    }
+                    Ok(x) if x.is_dir() => {
+                        if local_path.read_dir().unwrap().next().is_none() {
+                            git::init_bare(local_path).await?;
+                        } else {
+                            // assume it's a repository; later git calls will fail if it isn't, but at
+                            // least we didn't pollute an unrelated directory
+                        }
+                    }
+                    _ => bail!("directory exists but is not repository: {:?}", local_path),
+                }
+
+                let repository = Repository { local_path: local_path.clone() };
+                Ok(e.insert(repository))
+            }
+        }
+    }
+
+    fn local_path(&self, upstream: &str) -> PathBuf {
         let mut local_path = self.directory.clone();
         local_path.push(upstream);
+
         if !matches!(local_path.extension(), Some(ext) if ext.to_str() == Some("git")) {
             local_path.set_extension("git");
         }
 
-        match fs::metadata(&local_path) {
-            Err(e) if e.kind() == io::ErrorKind::NotFound => {
-                git::init_bare(&local_path).await?;
-            }
-            Ok(x) if x.is_dir() => {
-                if local_path.read_dir().unwrap().next().is_none() {
-                    git::init_bare(&local_path).await?;
-                } else {
-                    // assume it's a repository; later git calls will fail if it isn't, but at
-                    // least we didn't pollute an unrelated directory
-                }
-            }
-            _ => bail!("Directory exists but is not a repository: {:?}", local_path),
-        }
+        // TODO normalize and validate
 
-        Ok(Repository { local_path })
+        local_path
     }
 }
 
@@ -120,7 +144,6 @@ mod tests {
 }
 
 // Global FIXMEs/TODOs:
-// - validate the local paths
 // - include git output in errors that come from git
 // - delete branches and tags from the cache as they are deleted on upstream
 // - only accept https URLs since they are the only one we can provide credentials to
