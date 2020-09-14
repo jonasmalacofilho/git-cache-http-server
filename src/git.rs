@@ -2,6 +2,7 @@
 //!
 //! Because libgit2 and the `git2` crate do not yet implement the `git-upload-pack` and
 //! `git-receive-pack` services, this module wraps `git` commands.
+#![allow(dead_code)] // FIXME
 
 use eyre::Result;
 use eyre::{eyre, WrapErr};

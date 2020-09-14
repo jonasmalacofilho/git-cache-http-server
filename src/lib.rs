@@ -1,6 +1,7 @@
 use eyre::{bail, Result};
 
 use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 
 use std::fs;
 use std::io;
@@ -32,7 +33,7 @@ impl Credentials {
 
 pub struct Cache {
     directory: PathBuf,
-    registry: HashMap<PathBuf, Repository>,
+    registry: HashMap<PathBuf, Arc<Mutex<Repository>>>,
 }
 
 impl Cache {
@@ -44,7 +45,7 @@ impl Cache {
     }
 
     /// Open or create an existing local repository to cache `upstream`.
-    pub async fn open(&mut self, upstream: &str) -> Result<&Repository> {
+    pub async fn open(&mut self, upstream: &str) -> Result<&Arc<Mutex<Repository>>> {
         let local_path = self.local_path(upstream);
 
         use std::collections::hash_map::Entry;
@@ -69,7 +70,9 @@ impl Cache {
                     _ => bail!("directory exists but is not repository: {:?}", local_path),
                 }
 
-                let repository = Repository { local_path: local_path.clone() };
+                let repository = Arc::new(Mutex::new(Repository {
+                    local_path: local_path.clone(),
+                }));
                 Ok(e.insert(repository))
             }
         }
@@ -99,7 +102,12 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let mut cache = Cache::new(&dir);
 
-        let repo = cache.open("example.com/foo/bar").await.unwrap();
+        let repo = cache
+            .open("example.com/foo/bar")
+            .await
+            .unwrap()
+            .lock()
+            .unwrap();
 
         assert_eq!(
             repo.local_path().as_os_str(),
@@ -140,6 +148,25 @@ mod tests {
 
         assert!(cache.open(EXAMPLE_REPOSITORY).await.is_ok());
         assert!(dir.path().join(EXAMPLE_REPOSITORY).join("HEAD").is_file());
+    }
+
+    #[tokio::test]
+    async fn exclusive_access() {
+        use std::sync::TryLockError;
+        let dir = tempfile::tempdir().unwrap();
+        let mut cache = Cache::new(&dir);
+
+        let path = "example.com/foo/bar";
+
+        let client1 = Arc::clone(cache.open(path).await.unwrap());
+        let repo = client1.lock().unwrap();
+
+        assert!(matches!(
+            cache.open(path).await.unwrap().try_lock(),
+            Err(TryLockError::WouldBlock)
+        ));
+
+        drop(repo);
     }
 }
 
