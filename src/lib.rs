@@ -1,4 +1,4 @@
-use eyre::{bail, Result};
+use eyre::{bail, Result, WrapErr};
 
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
@@ -7,9 +7,12 @@ use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
 
+use url::Url;
+
 mod git;
 
 pub struct Repository {
+    upstream: String,
     local_path: PathBuf,
 }
 
@@ -18,8 +21,12 @@ impl Repository {
         &self.local_path
     }
 
-    pub fn update(&mut self, _credentials: &Credentials) -> Result<()> {
-        todo!()
+    pub async fn update(&mut self, _credentials: &Credentials) -> Result<()> {
+        let url = format!("https://{}", self.upstream);
+
+        let url = Url::parse(&url).wrap_err("resulting URL is invalid")?;
+
+        git::fetch(&self.local_path, &url, "+refs/*:refs/*").await
     }
 }
 
@@ -71,6 +78,7 @@ impl Cache {
                 }
 
                 let repository = Arc::new(Mutex::new(Repository {
+                    upstream: upstream.to_string(),
                     local_path: local_path.clone(),
                 }));
                 Ok(e.insert(repository))
@@ -99,27 +107,25 @@ mod tests {
 
     #[tokio::test]
     async fn smoke_test() {
+        let upstream = "github.com/jonasmalacofilho/git-cache-http-server";
+
         let dir = tempfile::tempdir().unwrap();
         let mut cache = Cache::new(&dir);
 
-        let repo = cache
-            .open("example.com/foo/bar")
-            .await
-            .unwrap()
-            .lock()
-            .unwrap();
+        let mut repo = cache.open(upstream).await.unwrap().lock().unwrap();
 
         assert_eq!(
             repo.local_path().as_os_str(),
-            dir.path().join("example.com/foo/bar.git").as_os_str()
+            dir.path().join(format!("{}.git", upstream)).as_os_str()
         );
-
         assert!(repo.local_path().join("HEAD").is_file());
 
-        // let credentials = Credentials::new();
+        let _credentials = Credentials::new();
 
-        // let mut repo = cache.open("github.com/jonasmalacofilho/git-cache-http-server").unwrap();
-        // assert_eq!(repo.update(&credentials), Ok(()));
+        let updated = repo.update(&_credentials).await;
+
+        assert_eq!(updated.unwrap(), ());
+        assert!(repo.local_path().join("FETCH_HEAD").is_file());
 
         // repo.serve_upload_pack();
 
@@ -166,6 +172,7 @@ mod tests {
             Err(TryLockError::WouldBlock)
         ));
 
+        drop(cache);
         drop(repo);
     }
 }
