@@ -1,4 +1,4 @@
-use eyre::{bail, Result, WrapErr};
+use eyre::{bail, eyre, Result, WrapErr};
 
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
@@ -6,6 +6,8 @@ use std::sync::{Arc, Mutex};
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
+
+use tokio::io::AsyncWrite;
 
 use url::Url;
 
@@ -27,6 +29,21 @@ impl Repository {
         let url = Url::parse(&url).wrap_err("resulting URL is invalid")?;
 
         git::fetch(&self.local_path, &url, "+refs/*:refs/*").await
+    }
+
+    pub async fn refs(
+        &self,
+        _service: &str,
+        timeout: u16,
+        writer: &mut (impl AsyncWrite + Unpin),
+    ) -> Result<()> {
+        let service = git::upload_pack(&self.local_path, true, true, timeout)?;
+
+        let mut reader = service.stdout.ok_or(eyre!("missing stdout"))?;
+
+        let _copied = tokio::io::copy(&mut reader, writer).await?;
+
+        Ok(())
     }
 }
 
@@ -112,6 +129,8 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let mut cache = Cache::new(&dir);
 
+        // open a given repository
+
         let mut repo = cache.open(upstream).await.unwrap().lock().unwrap();
 
         assert_eq!(
@@ -120,12 +139,23 @@ mod tests {
         );
         assert!(repo.local_path().join("HEAD").is_file());
 
+        // update the cached copy
+
         let _credentials = Credentials::new();
 
         let updated = repo.update(&_credentials).await;
 
         assert_eq!(updated.unwrap(), ());
         assert!(repo.local_path().join("FETCH_HEAD").is_file());
+
+        // allow cloning/fetching (1/2): get all refs
+
+        let mut buf = vec![];
+        repo.refs("git-upload-pack", 300, &mut buf).await.unwrap();
+        let refs = std::str::from_utf8(&buf).unwrap();
+
+        assert!(refs.contains("refs/heads/master"));
+        assert!(refs.ends_with("0000"));
 
         // repo.serve_upload_pack();
 
